@@ -1,7 +1,7 @@
 # The Inger Programming Language
 ## What is Inger?
 
-Inger is a simple imperative programming language, much like C (only somewhat cleaner). Inger was developed to illustrate the process of building a compiler from scratch, and writing a book about it (which is available for download here). Over time (at the time of this writing, Inger is 6 months old), Inger has grown beyond our expectations and is approaching a level where we can actually write simple games with it.
+Inger is a simple imperative programming language, much like C (only somewhat cleaner). Inger was developed to illustrate the process of building a compiler from scratch, and writing a book about it which is freely available in the `book` folder. Over time, Inger has grown beyond our expectations and is approaching a level where we can actually write simple games with it.
 
 Inger has full C-interoperability (it can call C-functions, provided that you write an Inger header file that describes the C-function, just like you would do in C) and work is underway to write header files for important operating system libraries (both Windows and Linux).
 
@@ -10,7 +10,7 @@ Inger has full C-interoperability (it can call C-functions, provided that you wr
 The development of the Inger compiler started off as a project at the University of Arnhem and Nijmegen (The Netherlands), aimed at taking a closer look at the back end of a (possibly new) compiler (the code generation part). Eventually we started developing our own little language, inspired by the symbolic machine language C. 
 
 ## The Book
-The primary goal was always to write a book that describes the process of writing a compiler in C, with lots of practical example. In the end, Inger has become the biggest practical example of all. The following people have contributed to the Inger compiler and the compiler handbook:
+The primary goal was always to write a book that describes the process of writing a compiler in C, with lots of practical example. In the end, Inger has become the biggest practical example of all. The following people have contributed to the Inger compiler and the Compiler Construction - A Practical Approach book:
 
 * Frank Benders
 * Marco Devillers
