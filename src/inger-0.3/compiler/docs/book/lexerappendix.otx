@@ -1,0 +1,21 @@
+\chapter{\langname{} Lexical Analyzer Source} \label{appendix:lexersource}
+
+	\section{tokens.h}
+	
+	\scriptsize
+	\lstset{language=Clang}
+	\lstset{style=Source}
+	\begin{lstlisting}
+	%!TOKENSH
+	\end{lstlisting}
+	\normalsize
+	
+	\section{lexer.l}
+
+	\scriptsize
+	\lstset{language=Clang}
+	\lstset{style=Source}
+	\begin{lstlisting}
+	%!LEXERL
+	\end{lstlisting}
+	\normalsize

@@ -1,0 +1,339 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                                 %%
+%%                  CODE LISTINGS                  %%
+%%                                                 %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%
+%% The listings package provides syntax-highlighted
+%% C and Inger sources.
+%%
+\usepackage{listings}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                                 %%
+%%                    LANGUAGES                    %%
+%%                                                 %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\lstdefinelanguage{Clang}%
+  {morekeywords={auto,break,case,char,const,continue,default,do,double,%
+      else,enum,extern,float,for,goto,if,int,long,register,return,%
+      short,signed,sizeof,static,struct,switch,typedef,union,unsigned,%
+      void,volatile,while},%
+   sensitive,%
+   morecomment=[s]{/*}{*/},%
+   morecomment=[l]//,% nonstandard
+   morestring=[b]",%
+   morestring=[b]',%
+   literate=,%
+   showstringspaces=false,%
+   moredirectives={define,elif,else,endif,error,if,ifdef,ifndef,line,%
+      include,pragma,undef,warning}%
+  }[keywords,comments,strings,directives]%
+
+%%
+%% Inger language definition.
+%% Replaces -> with a real right arrow.
+%%
+\lstdefinelanguage{Inger}%
+  {morekeywords={bool,break,case,char,continue,default,do,else,extern,%
+      false,float,goto\_considered\_harmful,if,int,label,module,%
+      return,start,switch,true,untyped,void,while},%
+   sensitive,%
+   morecomment=[s]{/*}{*/},%
+   morecomment=[l]//,%
+   morestring=[b]",%
+   morestring=[b]',%
+   literate={->}{{$\rightarrow\ $}}1,%
+   flexiblecolumns=true,%
+   showstringspaces=false,%
+   moredirectives={import}%
+  }[keywords,comments,strings,directives]%
+  
+\lstdefinelanguage{gasm}%
+  {morekeywords={al,ah,ax,eax,bl,bh,bx,ebx,cl,ch,cx,ecx,dl,dh,dx,edx,%
+      si,esi,di,edi,bp,ebp,sp,esp,cs,ds,es,ss,fs,gs,cr0,cr1,cr2,cr3,%
+      db0,db1,db2,db3,db4,db5,db6,db7,tr0,tr1,tr2,tr3,tr4,tr5,tr6,tr7,%
+      st,aaa,aad,aam,aas,adc,add,addl,and,andl,arpl,bound,bsf,bsr,bswap,bt,btc,%
+      btr,bts,call,cbw,cdq,clc,cld,cli,clts,cmc,cmp,cmpl,cmps,cmpsb,cmpsw,%
+      cmpsd,cmpxchg,cwd,cwde,daa,das,dec,div,enter,hlt,idiv,imul,in,%
+      inc,ins,int,into,invd,invlpg,iret,ja,jae,jb,jbe,jc,jcxz,jecxz,%
+      je,jg,jge,jl,jle,jna,jnae,jnb,jnbe,jnc,jne,jng,jnge,jnl,jnle,%
+      jno,jnp,jns,jnz,jo,jp,jpe,jpo,js,jz,jmp,lahf,lar,lea,leave,lgdt,%
+      lidt,lldt,lmsw,lock,lods,lodsb,lodsw,lodsd,loop,loopz,loopnz,%
+      loope,loopne,lds,les,lfs,lgs,lss,lsl,ltr,mov,movb,movw,movl,movs,movsb,movsw,%
+      movsd,movsx,movzx,mul,neg,nop,not,or,orl,out,outs,pop,popa,popad,%
+      popf,popfd,popl,pushl,push,pusha,pushad,pushf,pushfd,rcl,rcr,rep,repe,%
+      repne,repz,repnz,ret,retl,retf,rol,ror,sahf,sal,sall,sar,sarl,sbb,scas,seta,%
+      setae,setb,setbe,setc,sete,setg,setge,setl,setle,setna,setnae,%
+      setnb,setnbe,setnc,setne,setng,setnge,setnl,setnle,setno,setnp,%
+      setns,setnz,seto,setp,setpe,setpo,sets,setz,sgdt,shl,shld,shr,%
+      shrd,sidt,sldt,smsw,stc,std,sti,stos,stosb,stosw,stosd,str,sub,subl,%
+      test,verr,verw,wait,wbinvd,xadd,xchg,xchgl,xlatb,xor,xorl,fabs,fadd,fbld,%
+      fbstp,fchs,fclex,fcom,fcos,fdecstp,fdiv,fdivr,ffree,fiadd,ficom,%
+      fidiv,fidivr,fild,fimul,fincstp,finit,fist,fisub,fisubr,fld,fld1,%
+      fldl2e,fldl2t,fldlg2,fldln2,fldpi,fldz,fldcw,fldenv,fmul,fnop,%
+      fpatan,fprem,fprem1,fptan,frndint,frstor,fsave,fscale,fsetpm,%
+      fsin,fsincos,fsqrt,fst,fstcw,fstenv,fstsw,fsub,fsubr,ftst,fucom,%
+      fwait,fxam,fxch,fxtract,fyl2x,fyl2xp1,f2xm1,%
+      cmove,cmovne,cmovg,cmovge,cmovl,cmovle,cmovnle,cmovnl,cmovnge,%
+      cmovng},%
+   morekeywords=[2]{.globl,.align,.alpha,assume,byte,code,comm,comment,.const,%
+      .cref,.data,.data?,db,dd,df,dosseg,dq,dt,dw,dword,else,end,endif,%
+      endm,endp,ends,eq,equ,.err,.err1,.err2,.errb,.errdef,.errdif,%
+      .erre,.erridn,.errnb,.errndef,.errnz,event,exitm,extrn,far,%
+      .fardata,.fardata?,fword,ge,group,gt,high,if,if1,if2,ifb,ifdef,%
+      ifdif,ife,ifidn,ifnb,ifndef,include,includelib,irp,irpc,label,%
+      .lall,le,length,.lfcond,.list,local,low,lt,macro,mask,mod,.model,%
+      name,ne,near,offset,org,out,page,proc,ptr,public,purge,qword,.%
+      radix,record,rept,.sall,seg,segment,.seq,.sfcond,short,size,%
+      .stack,struc,subttl,tbyte,.tfcond,this,title,type,.type,width,%
+      word,.xall,.xcref,.xlist,%
+      .type,.size,.long,.text,%
+      },%
+   alsoletter=.,alsodigit=?,%
+   sensitive=f,%
+   morestring=[b]",%
+   morestring=[b]',%
+   showstringspaces=false,%
+   morecomment=[l];%
+   }[directives,keywords,comments,strings]%
+
+%% (E)BNF language definition.
+%% Has bold terminals, which you
+%% make by enclosing them in quotes (").
+%% You can emphasize a nonterminal
+%% by enclosing it in single quotes (').
+%% Use [e] to print an epsilon.
+%%
+%% Example of use:
+%% global: "extern" function.
+%% global: [e].
+%%
+%% Underlined terminals don't work very well:
+%% they leave tiny little speckles under the
+%% ';' and in more places.
+%%
+%% You can't make courier fonts bold.
+%%
+\lstdefinelanguage{BNF}%
+  {moredelim=[is][\textbf ]{"}{"},%
+   moredelim=[is][\emph ]{_}{_},%
+   showstringspaces=false,%
+   literate={(}{{$\big(\ $}}1 {)}{{$\big)\ $}}1 {[}{{$\big[\ $}}1 {]}{{$\big]\ $}}1 {\{}{{$\big\{\ $}}1 {\}}{{$\big\}\ $}}1 {[e]}{{$\epsilon$}}1,%
+   flexiblecolumns=true,%
+  }[]%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                                 %%
+%%                     STYLES                      %%
+%%                                                 %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\lstdefinestyle{Source}
+  {
+   captionpos=b,%
+   float=htbp,%
+   xleftmargin=40pt,%
+   numberstyle=\tiny,%
+   numbers=left,%
+   stepnumber=5,%
+   numbersep=15pt,%
+   tabsize=4,%
+   basicstyle=\small\sffamily,%
+   keywordstyle=\textbf,%
+   commentstyle=\ttfamily,%
+   aboveskip=16pt,%
+   belowskip=16pt,%
+  }
+
+\lstdefinestyle{BNF}
+  {
+   captionpos=b,%
+   float=htbp,%
+   xleftmargin=40pt,%
+   numbers=none,%
+   tabsize=4,%
+   basicstyle=,%
+   aboveskip=16pt,%
+   belowskip=16pt,%
+  }
+
+
+%%
+%% Declare WMF filename extension. Now we can use
+%% WMF files.
+%%
+\DeclareGraphicsRule{.wmf}{bmp}{}{}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                                 %%
+%%                     COMMANDS                    %%
+%%                                                 %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%
+%% Print language name (so it can be changed at any time).
+%%
+\newcommand{\langname}{\mbox{Inger}}
+
+%% OLD!
+%% \newcommand{\terminal}[1]{\underline{#1}}
+
+\newcommand{\mbold}[1]{\mbox{\boldmath $#1$}}
+
+%%
+%%  Typewriter text
+%%
+\newcommand{\code}[1]{\small\textsf{#1}\normalsize}
+
+%%
+%%  Typewriter text, and in index.
+%%
+\newcommand{\icode}[2]{\code{#1}\index{\code{#2}}}
+
+%% \newenvironment{listing}
+%%  {\begin{quote}
+%%   \resetlinenumber[1]
+%%   \begin{linenumbers}}
+%%  {\end{linenumbers}
+%%   \end{quote}}
+
+%%
+%% Emphasize
+%%
+\newcommand{\jargon}[1]{\emph{#1}}
+
+%%
+%% Emphasize, place in index.
+%%
+%% 1) single argument: emphasize and place in index.
+\newcommand{\ijargon}[1]{\jargon{#1}\index{#1}}
+%% 2) argument 1: emphasize, argument 2: place in
+%%    index.
+%%    Useful when argument 1 is a plural and you want
+%%    the singular to show up in the index.
+\newcommand{\ijargonex}[2]{\jargon{#1}\index{#2}}
+
+%%
+%% Table header
+%% Makes text bold.
+%%
+\newcommand{\tableheader}[1]{\textbf{#1}}
+
+
+%%
+%% Linebreaks without warnings.
+%% Place \lbr{} *just before* the paragraph that must
+%% be preceded by a line of whitespace.
+%% Indents the next paragraph.
+%%
+
+\newcommand{\lbri}
+{\par
+\
+\par}
+
+%%
+%% Linebreaks without warnings.
+%% Place \lbr{} *just before* the paragraph that must
+%% be preceded by a line of whitespace.
+%% Does NOT indent the next paragraph.
+%%
+\newcommand{\lbr}
+{\par
+\
+\par
+\noindent{}}
+
+%%
+%% Example environment.
+%% Usage:
+%% \begin{example}{title}{label}
+%%   blah blah
+%% \end{example}
+%%
+\newenvironment{example}[2]
+  {\begin{example_theorem}[#1] \label{#2}
+   \end{example_theorem}}
+  {\begin{flushright}$\square$\end{flushright}}
+
+%%
+%% Definition environment.
+%% Usage:
+%% \begin{definition}{title}{label}
+%%   blah blah
+%% \end{definition}
+%%
+\newenvironment{definition}[2]
+  {\begin{definition_theorem}[#1] \label{#2}
+   \end{definition_theorem}}
+  {\begin{flushright}$\blacksquare$\end{flushright}}
+
+%%
+%% Practical advice environment.
+%% Usage:
+%% \begin{advice}{title}{label}
+%%   blah blah
+%% \end{advice}
+%%
+\newenvironment{advice}[2]
+  {\begin{advice_theorem}[#1] \label{#2}
+   \end{advice_theorem}}
+  {\begin{flushright}$\blacksquare$\end{flushright}}
+
+
+%%
+%% May need to adjust scale to 0.9 when printing on A5.
+%%
+\newcommand{\diagram}[3]
+{
+	\begin{figure}[htbp]
+		\begin{center}
+       		\includegraphics[scale=0.18]{#1}
+       		\caption{#2} \label{#3}
+		\end{center}
+	\end{figure}
+}
+
+\newcommand{\map}[1]
+{
+	\begin{center}
+    	\includegraphics[scale=0.18]{#1}
+	\end{center}
+}
+
+\newenvironment{codetemplate}[1]
+  {\newpage{}
+   \subsection*{#1}
+   \label{codetemplate_#1}}
+  {}
+
+\newenvironment{ctinger}
+  {\subsubsection*{Inger}
+   \begin{quote}
+   \lstset{language=Inger}
+   \lstset{style=Source}}
+  {\end{quote}}
+
+\newenvironment{ctexample}
+  {\subsubsection*{Example}
+   \begin{quote}
+   \lstset{language=Inger}
+   \lstset{style=Source}}
+  {\end{quote}}
+
+\newenvironment{ctasm}
+  {\subsubsection*{Assembler}
+   \begin{quote}
+   \lstset{language=gasm}
+   \lstset{style=Source}}
+  {\end{quote}}
+
+\newenvironment{ctdesc}
+  {\subsubsection*{Description}
+   \begin{quote}}
+  {\end{quote}}

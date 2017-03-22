@@ -1,0 +1,8 @@
+/*!PRINTINT_IH*/
+/*
+ *  printint.ih
+ *
+ *  Header file for printint.c
+ */
+extern printint: int x -> void;
+/*!*/

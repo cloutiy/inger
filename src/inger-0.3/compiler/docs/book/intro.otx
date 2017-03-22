@@ -1,0 +1,370 @@
+% whatis.otx
+% Practical Compiler Construction
+% Chapter: What is a Compiler
+
+
+\chapter{Introduction}
+
+	
+   	This book is about constructing a compiler. But what, precisely,
+   	\jargon{is} a compiler? We must give a clear and complete answer
+   	to this question before we can begin building our own compiler.
+
+    In this chapter, we will introduce the concept of a translator, and
+    more specifically, a compiler. It serves as an introduction to the
+    rest of the book and presents some basic definitions that we will
+    assume to be clear throughout the remainder of the book.
+    
+    \section{Translation and Interpretation}
+    
+    	A compiler is a special form of a \ijargon{translator}:
+    	
+    	\begin{definition}{Translator}{def_translator}
+    		A translator is a program, or a system, that converts an input
+    		text some language to a text in another language, with the same
+    		meaning. 
+    	\end{definition}
+    	
+    	One translator could translate English text to Dutch text, and 
+    	another could translate a Pascal program to assembly or 
+    	machine code. Yet another translator might translate chess notation
+    	to an actual representation of a chess board, or translate a
+    	web page description in HTML to the actual web page. The latter
+    	two examples are in fact not so much translators as they are
+    	\ijargonex{interpreters}{interpreter}:
+    	
+    	\begin{definition}{Interpreter}{def_interpreter}
+    		An interpreter is a translator that converts an input 
+    		text to its meaning, as defined by its semantics.
+    	\end{definition}
+    	
+    	A BASIC-interpreter like GW-BASIC is a classic and familiar example
+    	of an interpreter. Conversely, a translator translates the
+    	expression \code{2+3} to, for example, machine code that 
+    	evaluates to \code{5}. It does \emph{not} translate directly
+    	to \code{5}. The processor (CPU) that executes the machine code
+    	is the actual interpreter, delivering the final result. These 
+    	observations lead to the following relationship:
+    	
+    	\[
+    		translators \subset interpreters
+    	\]
+    	
+    	Sometimes the difference between the translation of an input
+    	text and its meaning is not immediately clear, and it can be
+    	difficult to decide whether a certain translator is an
+    	interpreter or not. 
+    	
+    	A compiler is a translator that converts 
+    	program source code
+    	to some target code, such as Pascal to assembly code, C to
+    	machine code and so on. Such translators differ from translators
+    	for, for example, natural languages because their input
+    	is expected to follow very strict rules for form (syntax) and the
+    	meaning of an input text must always be clear, i.e. follow
+    	a set of \ijargon{semantic} rules.
+    	
+    	Many programs can be considered translators, not just the ones
+    	that deal with text. Other types of input and output can also
+    	be viewed as structured text (SQL queries, vector graphics, 
+    	XML) which adheres to a certain syntax, and therefore be treated
+    	the same way. Many conversion tools (conversion between
+    	graphics formats, or HTML to \LaTeX) are in fact translators.
+    	In order to think of some process as a translator, one must
+    	find out which alphabet is used (the set of allowed words)
+    	and which sentences are spoken. An interesting exercise is
+    	writing a program that converts chess notation to a chess
+    	board diagram.
+    	
+    	Meijer (\cite{intro_meijer} presents a set of definitions that 
+    	clarify the distinction between translation and interpretation.
+    	If the input text to a translator is a program, then that
+    	program can have its own input stream. Such a program can be
+    	translated without knowledge of the contents of the input stream,
+    	but it cannot be interpreted.
+    	
+    	Let $p$ be the program that must be translated, in programming
+    	language $P$, and let $i$ be the input. Then the interpreter
+    	is a function $v_{P}$, and the result of the translation of
+    	$p$ with input $i$ is denoted as:
+    	
+    	\begin{displaymath}
+    		v_{P}(p,i)
+    	\end{displaymath}
+    	
+    	If $c$ is a translator, the same result is obtained by applying
+    	the translation $c(p)$ in a programming language $M$ to the input
+    	stream $i$:
+    	
+    	\begin{displaymath}
+    		v_{M}(c(p),i)
+    	\end{displaymath}
+    	
+    	Interpreters are quite common. Many popular programming languages cannot
+    	be compiled but must be interpreted, such as (early forms of) BASIC,
+    	Smalltalk, Ruby, Perl and PHP. Other programming languages provide
+    	both the option of compilation and the option of interpretation.
+    	
+    	The rest of this book will focus on \ijargonex{compilers}{compiler},
+    	which translate program input texts to some target language. We are
+    	specifically interested in translating program input text in a 
+    	programming language (in particular, \langname{}) to 
+    	\ijargon{Intel assemby language}.
+
+	\section{Roadmap}
+
+		Constructing a compiler involves specifying the programming language
+        for which you wish to build a compiler, and then write a grammar for it.
+        The compiler then reads source programs written in the new programming
+        language and checks that they are syntactically valid (well-formed).
+        After that, the compiler verifies that the meaning of the program is
+        correct, i.e. it checks the program's \jargon{semantics}. The final
+        step in the compilation is generating code in the target language.
+
+        To help you vizualize where you are in the compiler construction process,
+        every chapter begins with a copy of the \jargon{roadmap}:
+		
+		\map{map.png}
+
+		One of the squares on the map will be highlighted.
+
+    	
+    \section{A Sample Interpreter}
+    	
+    	In this section, we will discuss a very simple sample interpreter
+    	that calculates the result of simple mathematical expressions, using
+    	the operators \code{+} (addition), \code{-} (subtraction), \code{*} 
+    	(multiplication) and \code{/} (division). We will work only with
+    	numbers consisting of one digits ($0$ through $9$). 
+    	
+    	We will now devise a systematical approach to calculate the result of
+    	the expression
+    	
+    	\begin{quote}
+    		\begin{verbatim}
+    			1 + 2 * 3 - 4
+    		\end{verbatim}
+    	\end{quote}
+    	
+    	This is traditionally done by reading the input string on a character by
+    	character basis. Initially, the \ijargon{read pointer} is set at the
+    	beginning of the string, just before the number \code{1}:
+    	
+    	\begin{quote}
+    		\begin{verbatim}
+ 1 + 2 * 3 - 4
+^
+    		\end{verbatim}
+    	\end{quote}    	
+    	
+    	We now proceed by reading the first character (or \ijargon{code}), which
+    	happens to be \code{1}. This is not an operator so we cannot calculate
+    	anything yet. We must store the \code{1} we just read away for later use,
+    	and we do so by creating a \ijargon{stack} (a last-in-first-out queue 
+    	abstraction) and placing \code{1} on it. We illustrate this by drawing
+    	a vertical line between the items on the stack (on the left) and the items
+    	on the input stream (on the right):
+    	
+    	\begin{quote}
+    		\begin{verbatim}
+1 |  + 2 * 3 - 4
+    ^
+    		\end{verbatim}
+    	\end{quote}    	
+    	
+    	The read pointer is now at the \code{+} operator. This operator needs two
+    	operands, only one of which is known at this time. So all we can do is
+    	store the \code{+} on the stack and move the read pointer forwards one
+    	position.
+    	
+    	\begin{quote}
+    		\begin{verbatim}
+1 + | 2 * 3 - 4
+     ^
+    		\end{verbatim}
+    	\end{quote}    	
+    	
+    	The next character read is \code{2}. We must now resist the temptation
+    	to combine this new operand with the operator and operand already on the stack
+    	and evaluate \code{1 + 2}, since the rules of precedence dictate that we must
+    	evaluate \code{2 * 3}, and then add this to \code{1}. Therefore, we place
+    	(\ijargon{shift}) the value \code{2} on the stack:
+    	
+    	\begin{quote}
+    		\begin{verbatim}
+1 + 2 | * 3 - 4
+       ^
+    		\end{verbatim}
+    	\end{quote}    	    	
+    	
+    	We now read another operator (\code{*}) which needs two operands. We shift it on
+    	the stack because the second operand is not yet known. The read pointer is once
+    	again moved to the right and we read the number \code{3}. This number is also
+    	placed on the stack and the read pointer now points to the operator \code{-}:
+    	
+    	\begin{quote}
+    		\begin{verbatim}
+1 + 2 * 3 | - 4
+           ^
+    		\end{verbatim}
+    	\end{quote}    	    	
+    	
+    	We are now in a position to fold up (\ijargon{reduce}) some of the contents of the stack.
+    	The operator \code{-} is of lower priority than the operator \code{*}. According to the
+    	rules of precedence, we may now calculate \code{2 * 3}, which happen to be the topmost
+    	three items on the stack (which, as you will remember, is a last-in-first-out data
+    	structure). We pop the last three items off the stack and calculate the result, which
+    	is shifted back onto the stack. This is the process of \ijargon{reduction}. 
+    	
+    	\begin{quote}
+    		\begin{verbatim}
+1 + 6 | - 4
+       ^
+    		\end{verbatim}
+    	\end{quote}    	    	
+    	
+    	We now compare the priority of the operator \code{-} with the priority of the operator
+    	\code{+} and find that, according to the rules of precedence, they have equal priority.
+    	This means we can either evaluate the current stack contents or continue shifting 
+    	items onto the stack. In order to keep the contents of the stack to a minimum (consider
+    	what would happen if an endless number of \code{+} and \code{-} operators were
+    	encountered in succession) we reduce the contents of the stack first, by calculating
+    	\code{1 + 6}:
+    	
+    	\begin{quote}
+    		\begin{verbatim}
+7 | - 4
+   ^
+    		\end{verbatim}
+    	\end{quote}    	    	
+    	
+    	The stack can be simplied no further, so we direct our attention to the next operator in
+    	the input stream (\code{-}). This operator needs two operands, so we must shift the read
+    	pointer still further to the right:
+    	
+
+    	\begin{quote}
+    		\begin{verbatim}
+7 - 4 |
+       ^
+    		\end{verbatim}
+    	\end{quote}    	    	    	
+    	
+    	We have now reached the end of the stream but are able to reduce the contents of the stack
+    	to a final result. The expression \code{7 - 4} is evaluated, yielding \code{3}. Evaluation
+    	of the entire expression \code{1 + 2 * 3 - 4} is now complete and the algorithm used in the 
+    	process is simple. There are a couple of interesting points:
+    	
+		\begin{enumerate}
+			\item Since the list of tokens already read from the input stream are placed on a stack
+			in order to wait for evaluation, the operations \ijargon{shift} and \ijargon{reduce} are
+			in fact equivalent to the operators \ijargon{push} and \ijargon{pop}.
+			
+			\item The relative precedence of the operators encountered in the input stream determine
+			the order in which the contents of the stack are evaluated.
+		\end{enumerate}
+		
+ 		Operators not only have \ijargon{priority}, but also \ijargon{associativity}. Consider the
+ 		expression
+ 		
+ 		\[
+ 			1 - 2 - 3
+ 		\]
+ 		
+ 		The order in which the two operators are evaluated is significant, as the following two
+ 		possible orders show:
+ 		
+ 		\[
+ 			(1 - 2) - 3 = -4
+ 		\]
+		\[ 			
+ 			1 - (2 - 3) = 2
+ 		\]
+ 		
+ 		Of course, the correct answer is $-4$ and we may conclude that the \code{-} operator associates
+ 		to the left. There are also (but fewer) operators that associate to the right, like the
+ 		``to the power of'' operator (\code{\^}):
+ 		
+ 		\[
+ 			(2 ^ 3) ^ 2 = 8 ^ 2 = 64 \quad (incorrect)
+ 		\]
+ 		\[
+ 			2 ^ (3 ^ 2) = 2 ^ 9 = 512 \quad (correct)
+ 		\]
+ 		
+ 		A final class of operators is nonassociative, like \code{+}:
+ 		
+ 		\[
+ 			(1 + 4) + 3 = 5 + 3 = 8
+ 		\]
+ 		\[
+ 			1 + (4 + 3) = 1 + 7 = 8
+ 		\]
+ 		
+ 		Such operators may be evaluated either to the left or to the right; it does not really matter.
+ 		In compiler construction, non-associative operators are often treated as left-associative operators
+ 		for simplicity.
+ 		
+		The importance of priority and associativty in the evaluation of mathematical expressions,
+		leads to the observation, that an operator \ijargon{priority list} is required by the 
+		interpreter. The following table could be used:
+		
+		\begin{center}
+			\begin{tabular}{lll}
+				\tableheader{operator} & \tableheader{priority} & \tableheader{associativity} \\
+				\hline
+				\code{\^} 	&	1	&	right \\
+				\code{*}	&	2	&	left  \\
+				\code{/} 	&	2	&	left  \\
+				\code{+}	& 	3	&	left  \\
+				\code{-}	& 	3	&	left  \\
+				\hline
+			\end{tabular}
+		\end{center}
+		
+		The parentheses, \code{(} and \code{)} can also be considered an operator, with the 
+		highest priority (and could therefore be added to the priority list). At this point, the
+		priority relation is still incomplete. We also need invisible markers to indicate the beginning and
+		end of an expression. The begin-marker \code{[} should be of the lowest priority (in order to cause
+		every other operator that gets shifted onto an otherwise empty stack \jargon{not} to
+		evaluate. The end-marker \code{]} should be of the lowest priority (just lower than 
+		\code{[}) for the same reasons. The new, full priority relation is then:
+		
+		\begin{quote}
+			\{ \code{[} , \code{]} \} $<$ \{ \code{+}, \code{-} \} $<$ \{ \code{*}, 
+			\code{/} \} $<$ \{ \code{\^} \} 
+		\end{quote}
+		
+		The language discussed in our example supports only one-digit numbers. In order to support
+		numbers of arbitrary length while still reading one digit at a time and working with 
+		the stack-based shift-reduce approach, we could introduce a new implicit concatenation
+		operator:
+		
+		\[
+			1.2 = 1 * 10 + 2 = 12
+		\]
+		
+		Numerous other problems accompany the introduction of numbers of arbitrary length, 
+		which will not be discussed here (but most certainly in the rest of this book). This 
+		concludes the simple interpreter which we have crafted by hand. In the remaining
+		chapter, you will learn how an actual compiler may be built using standard methods 
+		and techniques, which you can apply to your own programming language.
+
+        \begin{thebibliography}{99}
+        	\bibitem{intro_meijer}H. Meijer: \emph{Inleiding Vertalerbouw}, 
+        		University of Nijmegen, Subfaculty of Computer Science, 2002.
+			\bibitem{intro_pragmatics}M.J. Scott: \emph{Programming Language Pragmatics},
+				Morgan Kaufmann Publishers, 2000.
+        \end{thebibliography}
+    	
+    	
+    	
+    	
+    	
+    	
+    	
+    	 
+    	
+    	
+    	
+    	

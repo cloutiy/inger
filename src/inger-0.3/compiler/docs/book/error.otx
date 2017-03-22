@@ -1,0 +1,313 @@
+
+
+\chapter{Error Recovery} \label{chap_error}
+
+\map{map2error.png}
+
+\emph{As soon as we started programming, we found to our surprise that it wasn't as easy 
+to get programs right as we had thought. Debugging had to be discovered. 
+I can remember the exact instant when I realized that a large part of my life from then 
+on was going to be spent in finding mistakes in my own programmes."}
+- Maurice Wilkes discovers debugging, 1949.
+
+\section{Introduction}
+  Almost no programs are ever written from scratch that contain no errors at all. 
+  Since programming languages, as opposed to natural languages, have very rigid syntax rules, 
+  it is very hard to write error-free code for a complex algorithm on the first attempt. 
+  This is why compilers must have excellent features for error handling. Most programs 
+  will require several runs of the compiler before they are free of errors.
+
+  Error detection is a very important aspect of the compiler; it is the outward face of 
+  the compiler and the most important bit that the user will become rapidly familiar with. 
+  It is therefore imperative that error messages be clear, correct and, above all, useful. 
+  The user should not have to look up additional error information is a dusty manual, but 
+  the nature of the error should be clear from the information that the compiler gives.
+
+  This chapter discusses the different natures of errors, and shows ways  detecting, reporting 
+  and recovering from errors. 
+
+
+\section{Error handling}
+
+  Parsing is all about detecting syntax errors and displaying them in the most useful manner 
+  possible. For every compiler run, we want the parser to detect and display as many syntax errors 
+  as it can find, to alleviate the need for the user to run the compiler over and over, correcting 
+  the syntax errors one by one.
+
+  There are three stages in error handling: 
+  \begin{itemize} 
+    \item Detection
+    \item Reporting
+    \item Recovery 
+  \end{itemize}
+
+  The detection of errors will happen during compilation or during execution. Compile-time errors are 
+  detected by the compiler during translation. Runtime errors are detected by the operating system in 
+  conjunction with the hardware (such as a division by zero error). Compile-time errors are the only 
+  errors that the compiler should have to worry about, although it should make an effort to detect and 
+  warn about all the potential runtime errors that it can.
+  Once an error is detected, it must be reported both to the user and to a function which will process 
+  the error. The user must be informed about the nature of the error and its location (its line number, 
+  and possibly its character number).
+
+  The last and also most difficult task that the compiler faces is recovering from the error. 
+  Recovery means returning the compiler to a position in which it is able to resume parsing normally, 
+  so that subsequent errors do not result from the original error.
+
+\section{Error detection}
+  The first stage of error handling is detection which is divided into compile-time detection and 
+  runtime detection. Runtime detection is not part of the compiler so therefore it will not be 
+  discussed here. Compile-time however is divided into four stages which will be discussed here. 
+  These stages are:
+  \begin{itemize}
+    \item Detecting lexical errors
+    \item Detecting syntactic errors
+    \item Detecting semantic errors
+    \item Detecting compiler errors
+  \end{itemize}
+  
+  \emph{- Detecting lexical errors}
+    Normally the scanner reports a lexical error when it encounters an input character that cannot be 
+    the first character of any lexical token. In other words, an error is signalled when the scanner 
+    is unfamiliar with a token found in the input stream. Sometimes, however, it is appropriate to 
+    recognize a specific sequence of input characters as an invalid token. An example of a error 
+    detected by the scanner is an unterminated comment. The scanner must remove all comments from 
+    the source code. It is not correct, of course, to begin a comment but never terminate it. The 
+    scanner will reach the end of the source file before it encounters the end of the comment. Another 
+    (similar) example is when the scanner is unable to determine the end of a string.
+     
+    Lexical errors also include the error class known as overflow errors. Most languages include the 
+    integer type, which accepts integer numbers of a certain bit length (32 bits on Intel x86 machines). 
+    Integer numbers that exceed the maximum bit length generate a lexical error. These errors cannot be
+    detected using regular expressions, since regular expressions cannot interpret the value of a token, 
+    but only calculate its length. The lexer can rule that no integer number can be longer than 10 
+    digits, but that would mean that $000000000000001$ is not a valid integer number (although it is!). 
+    Rather, the lexer must verify that the literal value of the integer number does not exceed the maximum 
+    bit length using a so-called lexical action. When the lexer matches the complete token and is about to 
+    return it to the parser, it verifies that the token does not overflow. If it does, the lexer reports a 
+    lexical error and returns zero (as a placeholder value). Parsing may continue as normal.
+
+    \emph{- Detecting syntactic errors}
+    The parser uses the grammar's production rules to determine which tokens it expects the lexer to pass 
+    to it. Every nonterminal has a FIRST set, which is the set of all the terminal tokens that the 
+    nonterminal be replaced with, and a FOLLOW set, which is the set of all the terminal tokens that 
+    may appear after the nonterminal. After receiving a terminal token from the lexical analyzer, the 
+    parser must check that it matches the FIRST set of the nonterminal it is currently evaluating. 
+    If so, then it continues with its normal processing, otherwise the normal routine of the parser 
+    is interrupted and an error processing function is called.
+  
+    \emph{- Detecting semantic errors}
+    Semantic errors are detected by the action routines called within the parser. For example, when a 
+    variable is encountered it must have an entry in the symbol table. Or when the value of variable 
+    \verb|"a"| is assigned to variable \verb|"b"| they must be of the same type.
+  
+    \emph{- Detecting compiler errors}
+    The last category of compile-time errors deals with malfunctions within the compiler itself. 
+    A correct program could be incorrected compiled because of a bug in the compiler. The only 
+    thing the user can do is report the error to the system staff. To make the compiler as error-free 
+    as possible, it contains extensive self-tests.
+
+\section{Error reporting}
+
+  Once an error is detected, it must be reported to the user and to the error handling function. 
+  Typically, the user recieves one or more messages that report the error.
+  Errors messages displayed to the user must obey a few style rules, so that they may be clear 
+
+  and easy to understand.
+  \begin{enumerate}
+    \item The message should be specific, pinpointing the place in the program where the error was detected 
+    as closely as possible. Some compilers include only the line number in the source file on which the 
+    error occurred, while others are able to highlight the character position in the line containing the 
+    error, making the error easier to find.
+    \item The messages should be written in clear and complete English sentences, never in cryptic terms. 
+    Never list just a message code number such as \verb|"error number 33"| forcing the user to refer to a manual.
+    \item The message should not be redundant. For example when a variable is not declared, it is not be 
+    nessesary to print that fact each time the variable is referenced.
+    \item The messages should indicate the nature of the error discovered. For example, if a colon were 
+    expected but not found, then the message should just say that and not just \verb|"syntax error"| or 
+
+    \verb|"missing symbol"|.
+    \item It must be clear that the given error is actually an error (so that the compiler did not 
+    generate an executable), or that the message is a warning (and an executable may still be generated).
+  \end{enumerate}
+  
+\begin{example}{Error Reporting}{example:error_reporting}
+  \textbf{Error}
+  \begin{quote}
+    The source code contains an overflowing integer value\\
+    (e.g. $1234578901234567890$).
+  \end{quote}
+  \textbf{Response}
+  \begin{quote}
+
+    This error may be treated as a warning, since compilation can still take place. The offending 
+    overflowing value will be replaced with some neutral value (say, zero) and this fact should be 
+    reported: 
+    \begin{verbatim}
+      test.i (43): warning: integer value overflow 
+      (12345678901234567890). Replaced with 0.
+    \end{verbatim}
+  \end{quote}
+  \textbf{Error}
+  \begin{quote}
+    The source code is missing the keyword \code{THEN} where it is expected
+    according to the grammar.
+  \end{quote}
+  \textbf{Response}
+  \begin{quote}
+    This error cannot be treated as a warning, since an essential piece of code can not
+    be compiled. The location of the error must be pinpointed so that the user
+    can easily correct it:
+    \begin{verbatim}
+test.i (54): error: THEN expected after IF condition.
+    \end{verbatim}
+    Note that the compiler must now 
+    recover from the error; obviously an important part of the \code{IF} statement
+    is missing and it must be skipped somehow. More information on error recovery
+    will follow below.
+  \end{quote}
+\end{example}
+
+\section{Error recovery}
+
+  There are three ways to perform error recovery:
+  \begin{enumerate}
+    \item When an error is found, the parser stops and does not attempt to find
+       other errors.
+    \item When an error is found, the parser reports the error and continues parsing.
+      No attempt is made at error correction (recovery), so the next errors may be
+      irrelevant because they are caused by the first error.
+    \item When an error is found, the parser reports it and recovers from the
+      error, so that subsequent errors do not result from the original error.
+      This is the method discussed below.
+  \end{enumerate}
+  Any of these three approaches may be used (and have been), but it should be
+  obvious that approach \code{3} is most useful to the programmer using the compiler.
+  Compiling a large source program may take a long time, so it is advantageous
+  to have the compiler report multiple errors at once. The user may then
+  correct all errors at his leisure.
+
+\section{Synchronization}
+
+  Error recovery uses so-called synchronization points that the parser looks for after an error has been 
+  detected. A synchronization point is a location in the source code from which the parser can safely 
+  continue parsing without printing further errors resulting from the original error.
+  
+  Error recovery uses two sets of terminal tokens, the so-called direction sets:
+  \begin{enumerate}
+  \item The \ijargon{FIRST} set - is the set of all terminal symbols
+    with which the strings, generated by
+    all the productions for this nonterminal begin. 
+  \item The \ijargon{FOLLOW} set - a set of all terminal symbols that
+    can be generated by the grammar
+    directly after the current nonterminal.
+  \end{enumerate}
+  As an example for direction sets, we will consider the following very simple grammar and
+  show how the FIRST and FOLLOW sets may be constructed for it.
+
+  \lstset{language=BNF}
+  \lstset{style=BNF}
+  \begin{lstlisting}
+number:			digit morenumber.
+morenumber:		digit morenumber.
+morenumber:		[e].
+digit:			"0".
+digit:			"1".
+  \end{lstlisting}
+  
+  Any nonterminal has at least one, but frequently more than one production rule.
+  Every production rule has its own FIRST set, which we will call PFIRST.
+  The PFIRST set for a production rule contains all the leftmost terminal tokens that
+  the production rule may eventually produce. The FIRST set of any nonterminal is
+  the union of all its PFIRST sets.
+  We will now construct the FIRST and PFIRST sets for our sample grammar.
+
+  PFIRST sets for every production:
+
+  \lstset{language=BNF}
+  \lstset{style=BNF}
+  \begin{lstlisting}
+number:		digit morenumber.		PFIRST = { "0", "1" }
+morenumber:	digit morenumber.		PFIRST = { "0", "1" }
+morenumber:	[e].	 					PFIRST = { }
+digit:		"0".						PFIRST = { "0" }
+digit:		"1".						PFIRST = { "1" }
+  \end{lstlisting}
+
+  FIRST sets per terminal:
+
+  \lstset{language=BNF}
+  \lstset{style=BNF}
+  \begin{lstlisting}
+FIRST(number) = { "0", "1" }
+FIRST(morenumber) = { "0", "1" } V { } = { "0", "1" }
+FIRST(digit) = { "0" } V { "1" } = { "0", "1" }
+  \end{lstlisting}
+
+  \begin{advice}{Construction of PFIRST sets}{advice_pfirst}
+  PFIRST sets may be most easily constructed by working from bottom to top: find the
+  PFIRST sets for 'digit' first (these are easy since the production rules for digit
+  contain only terminal tokens). When finding the PFIRST set for a production rule higher
+  up (such as number), combine the FIRST sets of the nonterminals it uses (in the case
+  of number, that is digit). These make up the PFIRST set.
+  \end{advice}
+  
+  Every nonterminal must also have a FOLLOW set. A FOLLOW set contains all the 
+  terminal tokens that the grammar accepts after the nonterminal to which the FOLLOW 
+  set belongs. To illustrate this, we will now determine the FOLLOW sets for our 
+  sample grammar.
+  
+  \lstset{language=BNF}
+  \lstset{style=BNF}
+  \begin{lstlisting}
+number: 		digit morenumber.
+morenumber: 	digit morenumber.
+morenumber:		[e].
+digit: 			"0".
+digit: 			"1".
+  \end{lstlisting}
+  
+  FOLLOW sets for every nonterminal:
+  \lstset{language=BNF}
+  \lstset{style=BNF}
+  \begin{lstlisting}
+FOLLOW(number) = { EOF }
+FOLLOW(morenumber) = { EOF }
+FOLLOW(digit} = { EOF, "0", "1" }
+  \end{lstlisting}
+
+  The terminal tokens in these two sets are the synchronization points. After the parser detects 
+  and displays an error, it must synchronize (recover from the error). The parser does this by
+  ignoring all further tokens until it reads a token that occurs in a synchronization point set,
+  after which parsing is resumed.  This point is best illustrated by a example, describing a
+  \code{Sync} routine. Please refer to listing \ref{listing_sync}.
+
+  \lstset{language=Clang}
+  \lstset{style=Source}
+  \begin{lstlisting}[float, caption={\code{Sync} routine}, label=listing_sync]	
+  %!SYNC
+  \end{lstlisting}
+  
+  Tokens are requested from the lexer and discarded until a token occurs in one of the synchronization 
+  point lists. 
+  
+  At the beginning of each production function in the parser the FIRST and FOLLOW sets are filled. Then 
+  the function \code{Sync} should be called to check if the token given by the lexer is available in the
+  FIRST or FOLLOW set. If not then the compiler must display the error and search for a token that is 
+  part of the FIRST or FOLLOW set of the current production. This is the synchronization point. From here 
+  on we can start checking for other errors.
+  
+  It is possible that an unexpected token is encountered halfway a nonterminal function.
+  When this happens, it is nessesary to synchronize until a token of the FOLLOW set is
+  found. The function \code{SyncOut} provides this functionality
+  (see listing \ref{listing_sync_out}).
+
+  \lstset{language=Clang}
+  \lstset{style=Source}
+  \begin{lstlisting}[float, caption={\code{SyncOut} routine}, label=listing_sync_out]	
+  %!SYNCOUT
+  \end{lstlisting}
+  
+  Morgan (1970) claims that up to 80\% of the spelling errors occurring in
+  student programs may be corrected in this fashion.
+  

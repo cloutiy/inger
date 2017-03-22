@@ -1,0 +1,1604 @@
+% langspec.tex
+% Practical Compiler Construction
+% Chapter: Language Specification
+
+
+\chapter{Language Specification} \label{chap_langspec}
+
+	\map{map1langspec.png}
+
+    \section{Introduction}
+
+        This chapter gives a detailed introduction to the \langname{}
+        language. The reader is assumed to have some familiarity with
+        the concept of a programming language, and some experience with
+        mathematics.
+
+        To give the reader an introduction to programming in general,
+        we cite a short fragment of the introduction to the \emph{PASCAL
+        User Manual and Report} by Niklaus Wirth \cite{lang_PascalUserManual}:
+
+        \begin{quote}
+            An \ijargon{algorithm} or computer program consists of two
+            essential parts, a description of the actions which are to be
+            performed, and a description of the \ijargon{data}, which
+            are manipulated by so-called \ijargonex{statements}{statement}, and
+            data are described by so-called \ijargonex{declarations}{declaration}
+            and \ijargonex{definitions}{definition}.
+        \end{quote}
+
+        \langname{} provides language constructs (declarations) to define the data a program
+        requires, and numerous ways to manipulate that data. In the next sections,
+        we will explore \langname{} in some detail.
+
+    \section{Program Structure}
+
+        A program consists of one or more named modules, all of which contribute
+        data or actions to the final program. Every module resides in its own
+        source file. The best way to get to know \langname{} is to examine a
+        small module source file. The program ``factorial'' (listing
+        \ref{listing_factorial}) calculates the factorial of the number 6. The output
+        is $6! = 720$.
+
+		\lstset{language=Inger}
+		\lstset{style=Source}
+		\begin{lstlisting}[float,caption={Inger Factorial Program},label=listing_factorial]
+		%!FACTORIAL
+	    \end{lstlisting}
+
+        All modules begin with the module name, which can be any name the
+        programmer desires. A module then contains zero or more \ijargonex{functions}{function},
+        which encapsulate (parts of) algorithms, and zero or more \ijargonex{global variables}{global variable}
+        (global data). The functions and data declarations can
+        occur in any order, which is made clear in a \ijargon{syntax diagram}
+        (figure \ref{fig_syntax_module}). By starting from the left, one can
+        trace the lines leading through boxes and rounded enclosures. Boxes
+        represent additional syntax diagrams, while rounded enclosures contain
+        terminal symbols (those actually written in an \langname{} program).
+        A syntactically valid program is constructed by following the lines
+        and always taking smooth turns, never sharp turns. Note that dotted
+        lines are used to break a syntax diagram in half that is too wide
+        to fit on the page.
+
+		\diagram{syntax_module.png}{Syntax diagram for \emph{module}}{fig_syntax_module}
+
+        \begin{example}{Tracing a Syntax Diagram}{ex_tracing_syntax}
+        	As an example, we will show two valid programs that are generated
+        	by tracing the syntax diagram for \jargon{module}. These are not
+        	complete programs; they still contain the names of the additional
+        	syntax diagrams \jargon{function} and \jargon{declaration} that
+        	must be traced.
+
+			\lstset{language=Inger}
+			\lstset{style=Source}
+	 		\begin{lstlisting}
+module Program_One;
+        	\end{lstlisting}
+
+
+        	\code{Program\_One} is a correct program that contains no functions
+        	or declarations. The syntax diagram for \jargon{module} allows this,
+        	because the loop leading through either \jargon{function} or
+        	\jargon{declaration} is taken zero times.
+
+			\lstset{language=Inger}
+			\lstset{style=Source}
+	 		\begin{lstlisting}
+module Program_Two;
+extern function;
+declaration;
+function;
+        	\end{lstlisting}
+
+        	\code{Program\_Two} is also correct. It contains two functions and
+        	one declaration. One of the functions is marked \code{extern}; the
+        	keyword \code{extern} is optional, as the the syntax diagram for
+        	\jargon{module} shows.
+        \end{example}
+
+        Syntax diagrams are a very descriptive way of writing down language syntax,
+        but not very compact. We may also use \ijargon{Backus-Naur Form} (BNF) to
+        denote the syntax for the program structure, as shown in
+        listing \ref{listing_bnf_module}.
+
+
+
+        \lstset{language=BNF}
+        \lstset{style=BNF}
+        \begin{lstlisting}[float,caption={Backus-Naur Form for module},label=listing_bnf_module]
+module: 	"module" identifier ";" globals.
+globals: 	[e].
+globals: 	global globals.
+globals: 	"extern" global globals.
+global: 	function.
+global: 	declaration.
+        \end{lstlisting}
+
+        In BNF, each syntax diagram is denoted using one or more lines. The line begins with
+        the name of the syntax diagram (a \ijargon{nonterminal}), followed by a colon. The
+        contents of the syntax diagram are written after the colon: nonterminals,
+        (which have their own syntax diagrams), and \ijargonex{terminals}{terminal},
+        which are printed in bold.
+        Since nonterminals may have syntax diagrams of their own, a single syntax diagram
+        may be expressed using multiple lines of BNF.
+        A line of BNF is also called a \ijargon{production rule}. It provides
+        information on how to ``produce'' actual code from a nonterminal. In the
+        following example, we produce the programs ``one'' and ``two'' from
+        the previous example using the BNF productions.
+
+        \begin{example}{BNF Derivations}{ex_derivations}
+
+        	Here is the listing from program ``one'' again:
+
+			\lstset{language=Inger}
+			\lstset{style=Source}
+			\begin{quote}
+	 			\lstinline$module Program_One;$
+	 		\end{quote}
+
+        	To derive this program, we start with the topmost BNF nonterminal,
+
+        	\code{module}. This is called the \ijargon{start symbol}. There
+        	is only one production for this nonterminal:
+
+	        \lstset{language=BNF}
+        	\lstset{style=BNF}
+        	\begin{quote}
+        		\lstinline$module: 	"module"  identifier ";"  globals.$
+        	\end{quote}
+
+        	We now replace the nonterminal \code{module} with the right hand side
+        	of this production:
+
+			\lstset{language=Inger}
+			\lstset{style=Source}
+			\begin{quote}
+				\code{module} $\longrightarrow$ \code{module identifier; globals}
+        	\end{quote}
+
+        	Note that we have underlined the nonterminal to be replaced. In the new string
+        	we now have, there is a new nonterminal to replace: \code{globals}. There
+        	are multiple production rules for \code{globals}:
+
+	        \lstset{language=BNF}
+        	\lstset{style=BNF}
+        	\begin{quote}
+				\lstinline$globals: 	[e].$\\
+				\lstinline$globals: 	global globals.$\\
+				\lstinline$globals: 	"extern"  global globals.$\\
+			\end{quote}
+
+			Program ``One'' does not have any globals (declarations or functions), so we
+			replace the nonterminal \code{globals} with the empty string ($\epsilon$).
+			Finally, we replace the nonterminal \code{identifier}. We provide no BNF
+			rule for this, but it suffices to say that we may replace \code{identifier}
+			with any word consisting of letters, digits and underscores and starting
+			with either a letter or an underscore:
+
+        	\begin{quote}
+        		\code{\underline{module}} \\
+        		\code{$\longrightarrow$ module \underline{identifier}; globals} \\
+        		\code{$\longrightarrow$ module Program\_One; \underline{globals}} \\
+        		\code{$\longrightarrow$ module Program\_One;} \\
+        	\end{quote}
+
+        	And we have created a valid program! The above list of production
+        	rule applications is a called a \ijargon{derivation}. A derivation
+        	is the application of production rules until there are no
+        	nonterminals left to replace. We now create a derivation for
+        	program ``Two``, which contains two functions (one of which
+        	is \code{extern}, more on that later) and a declaration. We will
+        	not derive further than the function and declaration level, because
+        	these language structures will be explained in a subsequent section
+			Here is the listing for program ``Two'' again:
+
+			\lstset{language=Inger}
+			\lstset{style=Source}
+	 		\begin{lstlisting}
+module Program_Two;
+extern function;
+declaration;
+function;
+        	\end{lstlisting}
+
+        	\begin{quote}
+        		\code{\underline{module}} \\
+        		\code{$\longrightarrow$ module \underline{identifier}; globals} \\
+        		\code{$\longrightarrow$ module Program\_Two; \underline{globals}} \\
+        		\code{$\longrightarrow$ module Program\_Two; extern \underline{globals}} \\
+        		\code{$\longrightarrow$ module Program\_Two; extern \underline{global} globals} \\
+        		\code{$\longrightarrow$ module Program\_Two; extern function \underline{globals}} \\
+        		\code{$\longrightarrow$ module Program\_Two; extern function \underline{global} globals} \\
+        		\code{$\longrightarrow$ module Program\_Two; extern function declaration \underline{globals}} \\
+        		\code{$\longrightarrow$ module Program\_Two; extern function declaration \underline{global} globals} \\
+        		\code{$\longrightarrow$ module Program\_Two; extern function declaration function \underline{globals}}\\
+        		\code{$\longrightarrow$ module Program\_Two; extern function declaration function} \\
+        	\end{quote}
+
+        	And with the last replacement, we have produced to source code for program ``Two'',
+        	exactly the same as in the previous example.
+        \end{example}
+
+        BNF is a somewhat rigid notation; it only allows the writer to make
+        explicit the order in which nonterminals and terminals occur, but he must create
+        additional BNF rules to capture repetition and selection. For instance,
+        the syntax diagram for \jargon{module} shows that zero or more data
+        declarations or functions may appear in a program. In BNF, we show this
+        by introducing a production rule called \jargon{globals}, which calls itself
+        (is recursive). We also needed to create another production rule called
+        \jargon{global}, which has two alternatives (\jargon{function} and
+        \jargon{declaration}) to offer a choice. Note that \jargon{globals} has
+        three alternatives. One alternative is needed to end the repetition of
+        functions and declarations (this is denoted with an $\epsilon$, meaning
+        \jargon{empty}), and one alternative is used to include the keyword
+        \code{extern}, which is optional.
+
+        There is a more convenient notation called \ijargon{Extended Backus-Naur Form}
+        (EBNF), which allows the syntax diagram for \jargon{module} to be written
+        like this:
+
+        \lstset{language=BNF}
+        \lstset{style=BNF}
+        \begin{lstlisting}
+module:	"module" identifier ";" { [ "extern" ]
+		( function | declaration ) }.
+        \end{lstlisting}
+
+        In EBNF, we can use vertical bars (\verb+|+) to indicate a choice,
+        and brackets (\verb|[| and \verb|]|) to indicate an optional part.
+        These symbols are called \ijargonex{metasymbols}{metasymbol}; they
+        are not part of the syntax being defined. We can also use the
+        metasymbols \verb|(| and \verb|)| to enclose terminals and nonterminals
+        so they may be used as a group. Braces (\verb|{| and \verb|}|) are used
+        to denote repetition zero or more times.
+        In this book, we will use both EBNF and BNF. EBNF is short and clear,
+        but BNF has some advantages which will become clear in chapter
+        \ref{chap_grammar}, \emph{Grammar}.
+
+	\section{Notation}
+
+		Like all programming languages, \langname{} has a number of
+		\ijargonex{reserved words}{reserved word}, \ijargonex{operators}{operator}
+		and \ijargonex{delimiters}{delimiter} (table \ref{table_vocabulary}).
+		These words cannot be used for anything else than their intended purpose,
+		which will be discussed in the following sections.
+
+		% Include the table with all keywords and operators, which
+		% resides in a separate file (for editing conveniency).
+		\input{vocabulary.tab}
+
+		One place where the reserved words may be used freely, along with any other
+		words, is inside a \ijargon{comment}. A comment is input text that is meant
+		for the programmer, not the compiler, which skips them entirely. Comments
+		are delimited by the special character combinations \verb|/*| and \verb|*/|
+		and may span multiple lines. Listing \ref{listing_comments} contains some
+		examples of legal comments.
+
+
+		\lstset{language=Inger}
+		\lstset{style=Source}
+		\begin{lstlisting}[float,caption={Legal Comments},label=listing_comments]
+/* This is a comment. */
+
+/* This is also a comment,
+   spanning multiple
+   lines. */
+
+/*
+* This comment is decorated
+
+* with extra asterisks to
+* make it stand out.
+*/
+
+// This is a single-line comment.
+		\end{lstlisting}
+
+		The last comment in the example above starts with \verb|//| and ends
+		at the end of the line. This is a special form of comment called a
+		\ijargon{single-line comment}.
+
+		Functions, constants and variables may be given arbitrary names, or
+		\ijargonex{identifiers}{identifier} by the programmer, provided
+		reserved words are not used for this purpose. An identifier must begin
+		with a letter or an underscore (\verb|_|) to discern it from a number,
+		and there is no limit to the identifier length (except physical memory).
+		As a rule of thumb, 30 characters is a useful limit for the length of
+		identifiers. Although an \langname{} compiler supports names much longer
+		than that, more than 30 characters will make for confusing names which
+		are too long to read. All identifiers must be different, except when they
+		reside in different \ijargonex{scopes}{scope}. Scopes will be discussed in
+		greater detail later. We give a syntax diagram for identifiers in figure
+		\ref{fig_syntax_identifier} and EBNF production rules for comparison:
+
+		\diagram{syntax_identifier.png}{Syntax diagram for \emph{identifier}}{fig_syntax_identifier}
+
+        \lstset{language=BNF}
+        \lstset{style=BNF}
+        \begin{lstlisting}
+identifier: ( "_" | letter ) { letter | digit | "_" }
+letter: "A" | ... | "Z" | "a" | ... | "z"
+digit: "0" | ... | "9"
+        \end{lstlisting}
+
+        \begin{example}{Identifiers}{ex_identifiers}
+        	Valid identifiers include:
+        	\begin{quote}
+				\begin{alltt}
+					x
+					_GrandMastaD_
+					HeLlO_wOrLd
+        		\end{alltt}
+        	\end{quote}
+        	\noindent{}Some examples of invalid identifiers:
+        	\begin{quote}
+        		\begin{alltt}
+					2day
+					bool
+					@a
+					2+2
+	        	\end{alltt}
+	        \end{quote}
+        \end{example}
+
+        Of course, the programmer is free to choose wonderful names such as \code{\_\_\_} or
+        \code{x234}. Even though the language allows this, the names are not very descriptive
+        and the programmer is encouraged to choose better names that describe the purpose
+        of variables.
+
+
+        \langname{} supports two types of numbers: \ijargonex{integer numbers}{integer number}
+        ($x \in \mathbb{N}$), \ijargonex{floating point numbers}{floating point number}
+         ($x \in \mathbb{R}$). Integer numbers consist of only digits, and are
+        32 bits wide. They have a very simple syntax diagram shown in figure \ref{fig_syntax_integer}.
+        Integer numbers also include \ijargonex{hexadecimal numbers}{hexadecimal number}, which are
+        numbers with radix 16. Hexadecimal numbers are written using \code{0} through \code{9} and
+        \code{A} through \code{F} as digits. The case of the letters is unimportant. Hexadecimal
+        numbers must be prefixed with \code{0x} to set them apart from ordinary
+        integers. \langname{} can also work with \ijargonex{binary numbers}{binary number} (numbers
+        with radix 2). These numbers are written using only the digits \code{0} and \code{1}. Binary
+        numbers must be postfixed with \code{B} or \code{b} to set them apart from other integers.
+
+        \diagram{syntax_integer.png}{Syntax diagram for \jargon{integer}}{fig_syntax_integer}
+
+        Floating point numbers include a decimal separator\index{decimal separator} (a dot) and an optional
+        fractional part\index{fractional part}. They can be denoted using scientific notation
+        \index{scientific notation} (e.g. \code{12e-3}).
+        This makes their syntax diagram (figure \ref{fig_syntax_float}) more involved than the syntax
+        diagram for integers. Note that \langname{} always uses the dot as the decimal separator,
+        and not the comma, as is customary in some locations.
+
+        \diagram{syntax_float.png}{Syntax diagram for \jargon{float}}{fig_syntax_float}
+
+        \begin{example}{Integers and Floating Pointer Numbers}{ex_integer_and_float}
+	        Some examples of valid integer numbers:
+	        \begin{quote}
+	        	\begin{verbatim}
+	        		3          0x2e         1101b
+	        	\end{verbatim}
+	        \end{quote}
+	        Some examples of invalid integer numbers (note that these numbers may be perfectly valid
+	        floating point numbers):
+	        \begin{quote}
+	        	\begin{verbatim}
+	        		1a         0.2       2.0e8
+	        	\end{verbatim}
+	        \end{quote}
+	        Some examples of valid floating point numbers:
+	        \begin{quote}
+	        	\begin{verbatim}
+	        		0.2	      2.0e8      .34e-2
+	        	\end{verbatim}
+	        \end{quote}
+	        Some examples of invalid floating point numbers:
+	        \begin{quote}
+	        	\begin{verbatim}
+	        		2e-2       2a
+	        	\end{verbatim}
+	        \end{quote}
+        \end{example}
+
+        Alphanumeric information can be encoded in either single \ijargonex{characters}
+        {character} of \ijargonex{strings}{string}. A single character must be inclosed
+        within apostrophes (\code{'}) and a string must begin and and with double quotes
+        (\code{"}). Any and all characters may be used with a string or as a single character,
+        as long as they are printable (control characters cannot be typed). If a control
+        character must be used, \langname{} offers a way to \ijargon{escape} ordinary
+        characters to generate control characters, analogous to \jargon{C}. This is
+        also the only way to include double quotes in a string, since they are normally
+        used to start or terminate a string (and therefore confuse the compiler if not
+        treated specially). See table \ref{table_escape_sequences} for a list of escape
+        sequences and the special characters they produce.
+
+        \begin{table}[htbp]
+        	\begin{center}
+	        	\begin{tabular}{ll}
+	        		\tableheader{Escape Sequence}	&  \tableheader{Special character} \\
+	        		\hline
+	        		\code{$\backslash$"} 			&  \code{"}				\\
+	        		\code{$\backslash$'} 			&  \code{'}				\\
+	        		\code{$\backslash\backslash$} 	&  \code{$\backslash$}	\\
+	        		\code{$\backslash$a}			&  Audible bell         \\
+	        		\code{$\backslash$b}			&  Backspace			\\
+	        		\code{$\backslash$B\emph{nnnnnnnn}}	&  Convert binary value to character\\
+	        		\code{$\backslash$f}			&  Form feed			\\
+	        		\code{$\backslash$n}			&  Line feed			\\
+	        		\code{$\backslash$o\emph{nnn}}			&  Convert octal value to character\\
+	        		\code{$\backslash$r}			&  Carriage return		\\
+	        		\code{$\backslash$t}			&  Horizontal tab		\\
+	        		\code{$\backslash$v}			&  Vertical tab			\\
+	        		\code{$\backslash$x\emph{nn}}			&  Convert hexadecimal value to character\\
+	        		\hline
+	        	\end{tabular}
+	        	\caption{Escape Sequences}
+	        	\label{table_escape_sequences}
+	        \end{center}
+        \end{table}
+
+        A string may not be spanned across multiple lines. Note that while whitespace
+        such as spaces, tabs and end of line are normally used only to separate symbols and
+        further ignored, whitespace within a string remains unchanged by the compiler.
+
+        \begin{example}{Sample Strings and Characters}{ex_strings}
+            Here are some sample single characters:
+        	\begin{quote}
+        		\begin{verbatim}
+        			'b'        '&'         '7'         '"'        '''
+        		\end{verbatim}
+        	\end{quote}
+            \noindent{}Valid strings include:
+        	\begin{quote}
+        		\begin{verbatim}
+        			"hello, world"        "123"
+        			"\r\n"                "\"hi!\""
+        		\end{verbatim}
+        	\end{quote}
+        \end{example}
+
+        This concludes the introduction to the nototional conventions to which
+        valid \langname{} programs must adhere. In the next section, we will
+        discuss the concept of data (variables) and how  data is
+        defined in \langname{}.
+
+	\section{Data}
+
+
+
+		Almost all computer programs operate on data, with which we mean numbers or
+		text strings. At the lowest level, computers deal with data in the form of
+		bits (binary digits, which a value of either \code{0} or \code{1}), which
+		are difficult to manipulate. \langname{} programs can work at a higher level
+		and offer several data abstractions that provide a more convenient way to
+		handle data than through raw bits.
+
+		The data abstractions in \langname{} are \jargon{bool}, \jargon{char},
+		\jargon{float}, \jargon{int} and \jargon{untyped}. All of these except
+		untyped are scalar types, i.e. they are a subset of $\mathbb{R}$. The
+		untyped data abstraction is a very different phenomenon.  Each of the data
+		abstractions will be discussed in turn.
+
+		\subsection{bool\index{bool}}
+
+			\langname{} supports so-called \jargon{boolean}\footnote{In 1854, the
+			mathematician George Boole (1815--1864) published \emph{An investigation into
+			the Laws of Thought, on Which are founded the Mathematical Theories of Logic and
+			Probabilities}. Boole approached logic in a new way reducing it
+			to a simple algebra, incorporating logic into mathematics. He
+			pointed out the analogy between algebraic symbols and those that
+			represent logical forms. It began the algebra of logic called
+			Boolean algebra which now has wide applications in telephone
+			switching and the design of modern computers. Boole's work has
+			to be seen as a fundamental step in today's computer revolution.}
+			\jargon{values}\index{boolean value} and the means to work with them.
+			Boolean values are truth values, either \jargon{true} of \jargon{false}.
+			Variables of the boolean data type (keyword \code{bool}) can only
+			be assigned to using the keywords \code{true} or \code{false}, not
+			\code{0} or \code{1} as other languages may allow.
+
+			There is a special set of operators that work only with boolean values:
+			see table \ref{table_boolean_operators}. The result value of applying
+			one of these operators is also a boolean value.
+
+	        \begin{table}[htbp]
+	        	\begin{center}
+		        	\begin{tabular}{ll}
+		        		\tableheader{Operator}	&  \tableheader{Operation} \\
+		        		\hline
+		        		\code{\&\&}			    & Logical conjunction (and) \\
+		        		\verb+||+	  		    & Logical disjunction (or) \\
+		        		\code{!}			    & Logical negation (not) \\
+		        		\hline
+		        	\end{tabular}
+
+					\begin{tabular}{l}
+					\\
+					\end{tabular}
+
+		        	\begin{ttfamily}
+		        		\begin{tabular}{lll}
+		        			\begin{tabular}{c|c|c}
+		        			    A & B & A \&\& B \\
+		        			    \hline
+		        			    F & F & F \\
+		        			    F & T & F \\
+		        			    T & F & F \\
+		        			    T & T & T \\
+		        			\end{tabular}
+		        		    &
+		        			\begin{tabular}{c|c|c}
+		        			    A & B & A || B \\
+		        			    \hline
+		        			    F & F & F \\
+		        			    F & T & T \\
+		        			    T & F & T \\
+		        			    T & T & T \\
+		        			\end{tabular}
+		        		    &
+		        			\begin{tabular}{c|c}
+		        			    A & !A \\
+		        			    \hline
+		        			    F & T \\
+		        			    T & F \\
+		        			\end{tabular}
+		        		    \\
+			        	\end{tabular}
+		        	\end{ttfamily}
+		        	\caption{Boolean Operations and Their Truth Tables}
+		        	\label{table_boolean_operators}
+		        \end{center}
+	        \end{table}
+
+
+	        Some of the relational operators can be applied to boolean
+	        values, and all yield boolean return values. In table
+	        \ref{table_boolean_relations}, we list the relational operators
+	        and their effect. Note that \code{==} and \code{!=} can be applied
+	        to other types as well (not just boolean values), but will always
+	        yield a boolean result. The assignment operator \code{=} can be
+	        applied to many types as well. It will only yield a boolean
+	        result when used to assign a boolean value to a boolean variable.
+
+	        \begin{table}[htbp]
+	        	\begin{center}
+		        	\begin{tabular}{ll}
+		        		\tableheader{Operator}	&  \tableheader{Operation} \\
+		        		\hline
+		        		\code{==}               & Equivalence \\
+		        		\code{!=}               & Inequivalence \\
+		        		\code{=}                & Assignment \\
+		        		\hline
+		        	\end{tabular}
+		        	\caption{Boolean relations}
+		        	\label{table_boolean_relations}
+
+		        \end{center}
+	        \end{table}
+
+		\subsection{int\index{int}}
+
+			\langname{} supports only one integral type, i.e. \code{int}. A variable
+			of type \code{int} can store any $n \in \mathbb{N}$, as long as $n$ is
+			within the range the computer can store using its maximum word size.
+			In table \ref{table_intranges}, we show the size of integers that can
+			be stored using given maximum word sizes.
+
+	        \begin{table}[htbp]
+	        	\begin{center}
+		        	\begin{tabular}{ll}
+		        		\tableheader{Word size}	&  \tableheader{Integer Range} \\
+		        		\hline
+		        		8 bits					& -128..127 \\
+		        		16 bits					& -32768..32768 \\
+		        		32 bits					& -2147483648..2147483647 \\
+		        		\hline
+		        	\end{tabular}
+		        	\caption{Integer Range by Word Size}
+		        	\label{table_intranges}
+		        \end{center}
+	        \end{table}
+
+		    \langname{} supports only \ijargon{signed integers}, hence the negative
+		    ranges in the table. Many operators can be used with integer types
+		    (see table \ref{table_int_operators}), and all return a value of
+		    type \code{int} as well. Most of these operators are
+		    \code{polymorphic}: their return type corresponds to the type of
+		    their operands (which must be of the same type).
+
+	        \begin{table}[htbp]
+	        	\begin{center}
+		        	\begin{tabular}{ll}
+		        		\tableheader{Operator}	&  \tableheader{Operation} \\
+		        		\hline
+						\verb|-|	& unary minus\\
+						\verb|+|	& unary plus\\
+						\verb|~|	& bitwise complement\\
+						\verb|*|	& multiplication\\
+						\verb|/|	& division\\
+						\verb|%|	& modulus\\
+						\verb|+|	& addition\\
+						\verb|-|	& subtraction\\
+						\verb|>>|	& bitwise shift right\\
+						\verb|<<|	& bitwise shift left\\
+						\verb|<|	& less than\\
+						\verb|<=|	& less than or equal\\
+						\verb|>|	& greater than\\
+						\verb|>=|	& greater than or equal\\
+						\verb|==|	& equality\\
+						\verb|!=|	& inequality\\
+						\verb|&|	& bitwise and\\
+						\verb|^|	& bitwise xor\\
+						\verb+|+	& bitwise or\\
+						\verb|=|	& assignment\\
+		        		\hline
+		        	\end{tabular}
+		        	\caption{Operations on Integers}
+		        	\label{table_int_operators}
+		        \end{center}
+	        \end{table}
+
+			Of these operators, the unary minus (\code{-}), unary plus (\code{+})
+			and (unary) bitwise complement (\code{~}) associate to the right
+			(since they are unary) and the rest associates to the left, except
+			assignment (\code{=}).
+
+			The relational operators \code{=}, \code{!=}, \code{<},
+			\code{<=}, \code{>=} and \code{>} have a boolean result value,
+			even though they have operands of type \code{int}.
+			Some operations, such as additions and multiplications, can overflow
+			when their result value exceeds the maximum range of the \code{int}
+			type. Consult table \ref{table_intranges} for the maximum ranges. If
+			\code{a} and \code{b} are integer expressions, the operation
+
+			\begin{displaymath}
+				a\ \underline{op}\ b
+			\end{displaymath}
+
+			will \jargon{not} overflow if ($\mathbb{N}$ is the integer range of
+			a given system):
+
+			\begin{enumerate}
+				\item $a\ \underline{op}\ b \in \mathbb{N}$
+				\item $a \in \mathbb{N}$
+				\item $b \in \mathbb{N}$
+			\end{enumerate}
+
+		\subsection{float\index{float}}
+
+			The \ijargon{float} type is used to represent an element of
+			$\mathbb{R}$, although only a small part of $\mathbb{R}$ is supported,
+			using 8 bytes. A subset of the operators that can be used with operands
+			of type \code{int} can also be used with operands of type \code{float}
+			(see table \ref{table_float_operators}).
+
+	        \begin{table}[htbp]
+	        	\begin{center}
+		        	\begin{tabular}{ll}
+		        		\tableheader{Operator}	&  \tableheader{Operation} \\
+		        		\hline
+						\verb|-|	& unary minus\\
+						\verb|+|	& unary plus\\
+						\verb|*|	& multiplication\\
+						\verb|/|	& division\\
+						\verb|+|	& addition\\
+						\verb|-|	& subtraction\\
+						\verb|<|	& less than\\
+						\verb|<=|	& less than or equal\\
+						\verb|>|	& greater than\\
+						\verb|>=|	& greater than or equal\\
+						\verb|==|	& equality\\
+						\verb|!=|	& inequality\\
+						\verb|=|	& assignment\\
+		        		\hline
+		        	\end{tabular}
+		        	\caption{Operations on Floats}
+		        	\label{table_float_operators}
+		        \end{center}
+	        \end{table}
+
+	        Some of these operations yield a result value of type \code{float},
+	        while others (the relational operators) yield a value of type \code{bool}.
+	        Note that \langname{} supports only floating point values of 8 bytes,
+	        while other languages also support 4-byte so-called \ijargon{float}
+	        values (while 8-byte types are called \ijargon{double}).
+
+	    \subsection{char\index{char}}
+
+	    	Variables of type \code{char} may be used to store single unsigned
+	    	bytes\index{unsigned byte} (8 bits) or single characters\index{character}.
+	    	All operations that can be performed on variables of type \code{int} may
+	    	also be applied to operands of type \code{char}. Variables of type \code{char}
+            may be initialized with actual characters, like so:
+
+			\lstset{language=Inger}
+			\lstset{style=Source}
+			\begin{quote}
+				\lstinline$char c = 'a';$
+			\end{quote}
+
+			All escape sequences from table \ref{table_escape_sequences} may be used
+            to initialize a variable of type \code{char}, although only one at a time,
+            since a \code{char} represents only a single character.
+
+	    \subsection{untyped\index{untyped}}
+
+	    	In contrast to all the types discussed so far, the \code{untyped} type
+	    	does not have a fixed size. \code{untyped} is a \ijargon{polymorphic type},
+	    	which can be used to represent any other type. There is one catch:
+	    	\code{untyped} must be used as a \ijargon{pointer}.
+
+	    	\begin{example}{Use of Untyped}{ex_use_of_untyped}
+	    		The following code is legal:
+
+	    		\lstset{language=Inger}
+	    		\lstset{style=Source}
+	    		\begin{quote}
+	    			\lstinline$untyped *a;$
+		    		\lstinline$untyped **b;$
+	    		\end{quote}
+
+	    		\noindent{}but this code is not:
+	    		\lstset{language=Inger}
+	    		\lstset{style=Source}
+	    		\begin{quote}
+		    		\lstinline$untyped p;$
+	    		\end{quote}
+	    	\end{example}
+
+	    	This example introduces the new concept of a pointer. Any type may have
+	    	one or more levels of \ijargon{indirection}, which is denoted using one
+	    	more more asterisks (\code{*}). For an in-depth discussion on pointers,
+	    	consult \jargon{C Programming Language}\cite{lang_C} by Kernighan and Ritchie.
+
+	\section{Declarations}
+
+		All data and functions in a program must have a name, so that the
+		programmer can refer to them. No module may contain or refer to
+		more than one function with the same name; every function name must
+		be unique. Giving a variable or a function in the program a type
+		(in case of a function: input types and an output type) and a name
+		is called \jargon{declaring} the variable or function. All variables
+		must be declared before they can be used, but functions may
+		be used before they are defined.
+
+		An \langname{} program consists of a number of declarations of either
+		\ijargonex{global variables}{global variable} or functions. The variables
+		are called global because they are declared at the outermost \ijargon{scope}
+		of the program. Functions can have their own variables, which are then called
+		\ijargonex{local variables}{local variable} and reside within the scope of
+		the function. In listing \ref{listing_global_variables}, three global variables
+		are declared and accessed from within the functions \code{f} en \code{g}.
+		This code demonstrates that global variables can be accessed from within any
+		function.
+
+		\lstset{language=Inger}
+		\lstset{style=Source}
+		\begin{lstlisting}[float,caption={Global Variables},label=listing_global_variables]
+		%!GLOBVAR
+		\end{lstlisting}
+
+		Local variables can only be accessed from within the function in which they
+		are declared. Listing \ref{listing_local_variables} shows a faulty program,
+		in which variable \code{i} is accessed from a scope in which it cannot be seen.
+
+		\lstset{language=Inger}
+		\lstset{style=Source}
+		\begin{lstlisting}[float,caption={Local Variables},label=listing_local_variables]
+		%!LOCVAR
+		\end{lstlisting}
+
+		Variables are declared by naming their type (\code{bool}, \code{char},
+		\code{float}, \code{int} or \code{untyped}, their level of indirection,
+		their name and finally their array size. This structure is shown in
+		a syntax diagram in figure \ref{fig_syntax_declatation}, and in the
+		BNF production rules in listing \ref{listing_bnf_declaration}.
+
+		\diagram{syntax_declaration.png}{Declaration Syntax Diagram}{fig_syntax_declatation}
+
+        \lstset{language=BNF}
+        \lstset{style=BNF}
+        \begin{lstlisting}[float,caption={BNF for Declaration},label=listing_bnf_declaration]
+declarationblock:	type declaration { "," declaration }.
+declaration:        { "*" } identifier { "[" intliteral "]" } 
+										[ "=" expression ].
+type:               "bool" | "char" | "float" | "int" | "untyped".
+        \end{lstlisting}
+
+       	The syntax diagram and BNF productions show that it is possible
+       	to declare multiple variables using one declaration statement, and
+       	that variables can be initialized in a declaration. Consult the following example
+       	to get a feel for declarations:
+
+
+       	\begin{example}{Examples of Declarations}{ex_declarations}
+        	\lstset{language=Inger}
+        	\lstset{style=Source}
+        	\begin{quote}
+        		\lstinline$char *a, b = 'Q', *c = 0x0;$\\
+        		\lstinline$int number = 0;$\\
+        		\lstinline$bool completed = false, found = true;$\\
+        	\end{quote}
+
+        	Here the variable \code{a} is a pointer \code{char}, which is not
+        	initialized. If no initialization value is given, \langname{}
+        	will initialize a variable to 0. \code{b} is of type \code{char}
+        	and is initialized to \code{'Q'}, and \code{c} is a pointer to
+        	data of type \code{char}. This pointer is initialized to
+        	\code{0x0} (\code{null}) -- note that this does not initialize
+        	the \code{char} data to which \code{c} points to \code{null}.
+        	The variable \code{number} is of type \code{int} and is
+        	initialized to 0. The variables \code{completed} and
+        	\code{found} are of type \code{bool} and are initialized to
+        	\code{false} and \code{true} respectively.
+       	\end{example}
+
+	\section{Action}
+
+		A computer program is not worth much if it does not contain some
+		instructions (\ijargonex{statements}{statement}) that execute
+		actions that operate on the data that program declares. Actions come
+		in two categories: \ijargonex{simple statements}{simple statement}
+		and \ijargonex{compound statements}{compound statement}.
+
+		\subsection{Simple Statements}
+
+			There are many possible action statements, but there is only
+			one statement that actually has a \ijargon{side effect}, i.e.
+			manipulates data: this is the \ijargon{assignment statement},
+			which stores a value in a variable. The form of an assignment is:
+
+        	\lstset{language=Inger}
+        	\lstset{style=Source}
+			\begin{quote}
+				\lstinline$<variable> = <expression>$
+			\end{quote}
+
+			\code{=} is the assignment operator. The variable to which an expression
+			value is assigned is called the \ijargon{left hand side} or
+			\ijargon{lvalue}, and the expression which is assigned to the variable
+			is called the \ijargon{right hand side} or \ijargon{rvalue}.
+
+			The expression on the right hand side can consist of any (valid)
+			combination of constant values (numbers), variables, function calls
+			and operators. The expression is \ijargonex{evaluated}{expression evaluation}
+			to obtain a value to assign to the variable on the left hand side of
+			the assignment. Expression evaluation is done using the well-known
+			rules of mathematics, with regard to operator precedence and associativity.
+			Consult table \ref{table_operator_precedence} for all operators and their
+			priority and associativity.
+
+			\begin{table}[htbp]
+				\begin{center}
+					\begin{tabular}{llll}
+						\tableheader{Operator} & \tableheader{Priority}
+						    & \tableheader{Associatity} & \tableheader{Description}\\
+						\hline
+						\verb|()|	&	1	& L & function application\\
+						\verb|[]|	&   1	& L & array indexing\\
+						\verb|!|	& 	2	& R & logical negation\\
+						\verb|-|	&   2	& R & unary minus\\
+						\verb|+|	&	2	& R & unary plus\\
+						\verb|~|	&	3	& R	& bitwise complement\\
+						\verb|*|	&	3	& R & indirection\\
+						\verb|&|	&	3	& R & referencing\\
+						\verb|*|	& 	4	& L	& multiplication\\
+						\verb|/|	&	4	& L	& division\\
+						\verb|%|	&	4	& L	& modulus\\
+						\verb|+|	&	5	& L & addition\\
+						\verb|-|	&	5	& L & subtraction\\
+						\verb|>>|	&	6	& L & bitwise shift right\\
+						\verb|<<|	&	6	& L & bitwise shift left\\
+						\verb|<|	&	7	& L & less than\\
+						\verb|<=|	&	7	& L & less than or equal\\
+						\verb|>|	&	7	& L & greater than\\
+						\verb|>=|	&	7	& L & greater than or equal\\
+						\verb|==|	&	8	& L & equality\\
+						\verb|!=|	&	8	& L & inequality\\
+						\verb|&|	&	9	& L & bitwise and\\
+						\verb|^|	&	10	& L & bitwise xor\\
+						\verb+|+	&	11  & L & bitwise or\\
+						\verb|&&|	& 	12	& L & logical and\\
+						\verb+||+	& 	12	& L & logical or\\
+						\verb|?:|	&	13	& R & ternary if\\
+						\verb|=|	&	14	& R	& assignment\\
+		        	\end{tabular}
+		        	\caption{Operator Precedence and Associativity}
+		        	\label{table_operator_precedence}
+		        \end{center}
+	        \end{table}
+
+	        \begin{example}{Expressions}{ex_expressions}
+	        	\lstset{language=Inger}
+	        	\lstset{style=Source}
+				\begin{quote}
+					\lstinline$2 * 3 - 4 * 5			= (2 * 3) - (4 * 5)	= -14$\\
+					\lstinline$15 / 4 * 4				= (15 / 4) * 4		= 12$\\
+					\lstinline$80 / 5 / 3				= (80 / 5) / 3		= 5$\\
+					\lstinline$4 / 2 * 3				= (4 / 2) * 3		= 6$\\
+					\lstinline$9.0 * 3 / 2				= (9.0 * 3) / 2     = 13.5$\\
+				\end{quote}
+	        \end{example}
+
+	        The examples show that a division of two integers results
+	        in an integer type (rounded down), while if either one
+	        (or both) of the operands to a division is of type \code{float},
+	        the result will be \code{float}.
+
+	        Any type of variable can be assigned to, so long as the expression type
+	        and the variable type are equivalent.  Assignments may also be
+	        \ijargonex{chained}{assignment chaining}, with multiple variables being
+	        assigned the same expression with one statement. The following example
+	        shows some valid assignments:
+
+	        \begin{example}{Expressions}{ex_assignments}
+	        	\lstset{language=Inger}
+	        	\lstset{style=Source}
+				\begin{quote}
+					\lstinline$int a, b;$ \\
+					\lstinline$int c = a = b = 2 + 1;$ \\
+					\lstinline$int my_sum = a * b + c; /*  12 */$ \\
+				\end{quote}
+	        \end{example}
+
+	        All statements must be terminated with a semicolon (\code{;}).
+
+		\subsection{Compound Statements}
+
+			A compount statement is a group of zero or more statements contained within
+			braces (\code{\{} and \code{\}}). These statements are executed as a group,
+			in the sequence in which they are written. Compound statements are used
+			in many places in \langname{} including the body of a function, the action
+			associated with an \code{if}-statement and a \code{while}-statement. The form
+			of a compound statement is:
+
+			\begin{quote}
+				\lstset{language=BNF}
+				\lstset{style=BNF}
+				\lstinline$block:	"{" code "}".$\\
+				\lstinline$code:	e.$\\
+    			\lstinline$code:	block code.$\\
+    			\lstinline$code:	statement code.$\\
+			\end{quote}
+
+			\diagram{syntax_block.png}{Syntax diagram for \emph{block}}{fig_syntax_block}
+
+			The BNF productions show, that a compound statement, or \ijargon{block},
+			may contain zero (empty), one or more statements, and may contain other
+            blocks as well. In the following example, the function \code{f} has a
+			block of its own (the \ijargon{function body}), which contains another
+			block, which finally contains a single statement (a declaration).
+
+			\begin{example}{Compound Statement}{ex_compound_statement}
+				\lstset{language=Inger}
+				\lstset{style=Source}
+				\begin{lstlisting}
+module compound;
+
+start f: void -> void
+{
+	{
+
+		int a = 1;
+	}
+}
+				\end{lstlisting}
+			\end{example}
+
+		\subsection{Repetitive Statements}
+
+			Compound statements (including compoung statements with only one
+            statement in their body) can be wrapped inside a repetitive statement
+            to cause it to be executed multiple times.  Some programming
+			languages come with multiple flavors of repetitive statements;
+			\langname{} has only one: the \code{while} statement.
+
+
+			The \code{while} statement has the following BNF productions (also
+            consult figure \ref{fig_syntax_while} for the accompanying syntax
+            diagram):
+
+			\begin{quote}
+				\lstset{language=BNF}
+				\lstset{style=BNF}
+				\lstinline$statement:	"while" "(" expression ")" "do" block$
+			\end{quote}
+
+			\diagram{syntax_while.png}{Syntax diagram for \emph{while}}{fig_syntax_while}
+
+			The expression between the parentheses must be of type \code{bool}.
+			Before executing the compound statement contained in the \code{block},
+			the repetitive statement checks that \code{expression} evaluates to
+			true. After the code contained in \code{block} has executed, the
+			repetitive statement evaluates \code{expression} again and so on
+            until the value of \code{expression} is false. If the expression
+            is initially false, the compound statement is executed zero times.
+
+			Since the expression between parentheses is evaluated each time the
+            repetitive statement (or \ijargon{loop}) is executed, it is advised
+            to keep the expression simple so as not to consume too much processing
+            time, especially in longer loops.
+
+			The demonstration program in listing \ref{listing_while_demo}
+			was taken from the analogous
+			\jargon{The while statement} section from Wirth's
+			\jargon{PASCAL User Manual} (\cite{lang_PascalUserManual}) and
+            translated to \langname{}.
+
+			\lstset{language=Inger}
+			\lstset{style=Source}
+			\begin{lstlisting}[float,caption={The While Statement},label=listing_while_demo]
+			%!WHILE
+			\end{lstlisting}
+
+			The \code{printint} function and the \code{\#import} directive will
+            be discussed in a later section. The output of this program is \code{2.9287},
+            printed on the console. It should be noted that the compound statement
+            that the \code{while} statement must be contained in braces; it cannot
+            be specified by itself (as it can be in the C programming language).
+            
+            \langname{} provides some additional control statements, that may be used
+            in conjunction with \code{while}: \code{break} and \code{continue}. The
+            keyword \code{break}\index{break}\index{continue} may be used to prematurely
+            leave a \code{while}-loop. It is often used from within the body of an
+            \code{if} statement, as shown in listings \ref{listing_break_demo} and
+            \ref{listing_break_demo_output}.
+            
+			\lstset{language=Inger}
+			\lstset{style=Source}
+			\begin{lstlisting}[float,caption={The Break Statement},label=listing_break_demo]
+			%!WHILE_BREAK
+			\end{lstlisting}
+			
+			\lstset{language=Inger}
+			\lstset{style=Source}
+			\begin{lstlisting}[float,caption={The Break Statement (output)},label=listing_break_demo_output]
+			%!WHILE_BREAK_OUTPUT
+			\end{lstlisting}
+			
+			The \code{continue} statement is used to abort the current iteration of a loop and
+			continue from the top. Its use is analogous to \code{break}: see listings
+			\ref{listing_continue_demo} and \ref{listing_continue_demo_output}.
+			
+			\lstset{language=Inger}
+			\lstset{style=Source}
+			\begin{lstlisting}[float,caption={The Continue Statement},label=listing_continue_demo]
+			%!WHILE_CONTINUE
+			\end{lstlisting}
+			
+			\lstset{language=Inger}
+			\lstset{style=Source}
+			\begin{lstlisting}[float,caption={The Continue Statement (output)},label=listing_continue_demo_output]
+			%!WHILE_CONTINUE_OUTPUT
+			\end{lstlisting}
+			
+			The use of \code{break} and \code{continue} is discouraged, since they tend to make
+			a program less readable.
+			
+		\subsection{Conditional Statements}				
+
+			Not every statement must be executed. The choice of statements to execute
+            can be made using \ijargonex{conditional statements}{conditional statement}.
+            \langname{} provides the \code{if} and \code{switch} statements.
+
+			\subsubsection{The if statement}
+			
+				An \code{if} statement\index{if} consists of a boolean expression, and one or
+                two compound statements. If the boolean expression is true, the first
+                compound statement is executed. If the boolean expression evaluates to
+                false, the second compound statement (if any) is executed. Remember that
+                compound statements need not contain multiple statements; they can contain
+                a single statement or no statements at all.
+
+				The above definition of the \code{if} conditional statement has the following
+                BNF producution associated with it (also consult figure \ref{fig_syntax_if}
+                for the equivalent syntax diagram):
+
+				\begin{quote}
+					\lstset{language=BNF}
+					\lstset{style=BNF}
+					\lstinline$statement:	"if" "(" expression ")" block elseblock$\\
+					\lstinline$elseblock:	[e].$\\
+					\lstinline$elseblock:	"else" block.$\\
+				\end{quote}
+
+				\diagram{syntax_if.png}{Syntax diagram for \emph{if}}{fig_syntax_if}
+
+				The productions for the \code{elseblock} show that the \code{if} statement
+                may contain a second compound statement (which is executed if the boolean
+                expression argument evaluates to false) or no second statement at all. If
+                there is a second block, it must be prefixed with the keyword \code{else}.
+
+                As with the \code{while} statement, it is not possible to have the \code{if}
+				statement execute single statements, only blocks contained within braces.
+                This approach solves the \ijargon{dangling else problem} from which the Pascal
+                programming language suffers.
+                %%% TODO: literature reference?
+
+                The ``roman numerals'' program (listing \ref{listing_roman_numerals}, copied
+                from \cite{lang_PascalUserManual} and translated to \langname{} illustrates
+                the use of the \code{if} and \code{while} statements.
+				
+				\lstset{language=Inger}
+				\lstset{style=Source}
+				\begin{lstlisting}[float,caption={Roman Numerals},label=listing_roman_numerals]
+				%!ROMANNUMERALS
+				\end{lstlisting}
+
+				\lstset{language=Inger}
+				\lstset{style=Source}
+				\begin{lstlisting}[float,caption={Roman Numerals Output},label=listing_roman_numerals_output]
+				%!ROMANNUMERALSOUTPUT
+				\end{lstlisting}
+
+			\subsubsection{The case statement}
+
+				The \code{if} statement only allows selection from two alternatives. If
+                more alternatives are required, the \code{else} blocks must contain secondary
+                \code{if} statements up to the required depth (see listing \ref{listing_elseif}
+                for an example). \langname{} also provides the \code{switch} statement, which
+                constists of an expression (the \ijargon{selector}) and a list of alternatives
+                \ijargonex{cases}{case}. The cases are labelled with numbers (integers); the
+                \code{switch} statement evaluates the selector expression (which must evaluate
+                to type integer) and executes the alternative whose label matches the result.
+                If no case has a matching label, \code{switch} executes the \ijargon{default}
+                case (which is required to be present).  The following BNF defines
+				the \code{switch} statement more precisely:
+
+				\begin{quote}
+					\lstset{language=BNF}
+					\lstset{style=BNF}
+					\lstinline$statement:	"switch" "(" expression ")" "{" cases "default" block "}".$\\
+					\lstinline$cases:		[e].$\\
+					\lstinline$cases:		"case" <int_literal> block cases.$\\
+				\end{quote}
+
+				This is also shown in the syntax diagram in figure \ref{fig_syntax_switch}.
+			
+				\diagram{syntax_switch.png}{Syntax diagram for \emph{switch}}{fig_syntax_switch}
+
+				\lstset{language=Inger}
+				\lstset{style=Source}
+				\begin{lstlisting}[float,caption={Multiple If Alternatives},label=listing_elseif]
+				%!ELSEIF
+				\end{lstlisting}
+
+                It should be clear the use of the \code{switch} statement in listing
+				\ref{listing_switch} if much clearer than the multiway \code{if} statement
+                from listing \ref{listing_elseif}.
+				
+				\lstset{language=Inger}
+				\lstset{style=Source}
+				\begin{lstlisting}[float,caption={The Switch Statement},label=listing_switch]
+				%!SWITCH
+				\end{lstlisting}
+
+				There cannot be duplicate case labels in a case statement, because the compiler
+                would not know which label to jump to. Also, the order of the case labels is
+                of no concern.
+
+		\subsection{Flow Control Statements}
+	
+			\ijargonex{Flow control statements}{flow control statement} are statements
+            the cause the execution of a program to stop, move to another location in
+            the program, and continue. \langname{} offers one such statement: the
+            \code{goto\_considered\_harmful} statement. The name of this statement
+			(instead of the more common \code{goto}) is a tribute to the Dutch
+            computer scientist Edger W. Dijkstra.\footnote{Edger W. Dijkstra
+			(1930-2002) studied mathematics and physics in Leiden, The Netherlands.
+            He obtained his PhD degree with a thesis on computer communications, and
+            has since been a pioneer in computer science, and was awarded the ACM Turing
+            Award in 1972. Dijkstra is best known for his theories about structured programming,
+            including a famous article titled \emph{Goto Considered Harmful}. Dijkstra's
+            scientific work may be found at http://www.cs.utexas.edu/users/EWD.}
+
+			The \code{goto\_considered\_harmful} statement causes control to jump to a specified
+            (textual) \ijargon{label}, which the programmer must provide using the \code{label}
+            keyword. There may not be any duplicate labels throughout the entire program,
+            regardless of scope level. For an example of the goto statement, see listing
+			\ref{listing_goto}.
+				
+			\lstset{language=Inger}
+			\lstset{style=Source}
+			\begin{lstlisting}[float,caption={The Goto Statement},label=listing_goto]
+			%!GOTO
+			\end{lstlisting}
+
+            The \code{goto\_considered\_harmful} statement is provided for convenience, but
+            its use is strongly discouraged (like the name suggests), since it is
+            detrimental to the structure of a program.
+
+	\section{Array}
+		
+		Beyond the simple types \code{bool}, \code{char}, \code{float},
+		\code{int} and \code{untyped} discussed earlier, \langname{}
+		supports the advanced data type \ijargon{array}. An array contains
+        a predetermined number of elements, all of the same type. Examples
+        are an array of elements of type \code{int}, or an array whose elements
+        are of type \code{bool}. Types cannot be mixed.
+		
+		The elements of an array are laid out in memory in a sequential manner.
+        Since the number and size of the elements is fixed, the location of any element in
+        memory can be calculated, so that all elements can be accessed equally fast.
+        Arrays are called \ijargonex{random access structures}{random access structure}
+        for this reason. In the section on declarations, BNF productions and a syntax
+        diagram were shown which included array brackets (\code{[} and \code{]}). We will
+        illustrate their use here with an example:
+
+		\lstset{language=Inger}
+		\lstset{style=Source}
+		\begin{quote}
+		\lstinline$int a[5];$
+		\end{quote}
+		
+		declares an array of five elements of type \code{int}. The individual elements can
+        be accessed using the \code{[]} indexing operator, where the index is zero-based:
+        \lstinline$a[0]$ accesses the first element in the array, and \lstinline$a[4]$
+        accesses the last element in the array. Indexed array elements may be used wherever
+        a variable of the array's type is allowed. As an example, we translate another
+        example program from N. Wirth's \jargon{Pascal User Manual} (\cite{lang_PascalUserManual}),
+        in listing \ref{listing_array}.
+
+ 		\lstset{language=Inger}
+		\lstset{style=Source}
+		\begin{lstlisting}[float,caption={An Array Example},label=listing_array]
+		%!MINMAX
+		\end{lstlisting}
+
+		Arrays (matrices) may have more than one \ijargon{dimension}. In declarations, this
+        is specified thus:
+
+		\lstset{language=Inger}
+		\lstset{style=Source}
+		\begin{quote}
+			\lstinline$int a[4][6];$
+		\end{quote}
+
+		which declares \code{a} to be a $4 \times 6$ matrix. Elements access is similar:
+		\lstinline$a[2][2]$ accesses the element of \code{a} at row 2, column 2. There
+        is no number to the number of dimensions used in an array.
+
+		\langname{} has no way to initialize an array, with the exception of character
+        strings. An array of characters may be initialized with a string constant,
+        as shown in the code below:
+
+		\lstset{language=Inger}
+		\lstset{style=Source}
+		\begin{quote}
+			\lstinline$char a[20]  = "hello, world!";$
+		\end{quote}
+
+		In this code, the first 13 elements of array \code{a} are initialized with
+        corresponding characters from the string constant \lstinline$"hello, world"$.
+		\lstinline$a[13]$ is initialized with zero, to indicate the end of the string,
+        and the remaining characters are uninitialized. This example also shows that
+        \langname{} works with \ijargonex{zero-minated strings}{zero-terminated string},
+        just like the C programming language. However, one could say that \langname{}
+        has no concept of string; a string is just an array of characters, like any
+        other array. The fact that strings are zero-terminated (so-called
+        ASCIIZ-strings) is only relevant to the system support libraries, which
+        provide string manipulation functions.
+
+		It is not possible to assign an array to another array. This must be done on
+        an element-by-element basis. In fact, if any operator except the indexing
+        operator (\code{[]}) is used with an array, the array is treated like a
+        \ijargon{typed pointer}.
+
+	\section{Pointers}
+
+		Any declaration may include some level of indirection, making the variable
+        a \jargon{pointer}.	 Pointers contain addresses; they are not normally used
+        for storage themselves, but to point to other variables (hence the name).
+        Pointers are a convenient mechanism to pass large data structures between
+        functions or modules.  Instead of copying the entire data structure to
+        the receiver, the receiver is told where it can access the data structure
+        (given the address).
+		
+		The \code{\&} operator can be used to retrieve the address of any variable,
+        so it can be assigned to a pointer, and the \code{*} operator is used
+        to access the variable at a given address. Examine the following example code
+        to see how this works:
+
+		\lstset{language=Inger}
+		\lstset{style=Source}
+		\begin{quote}
+			\lstinline$int a;$ \\
+			\lstinline$int *b = &a;$ \\	
+			\lstinline$*b = 2;$ \\
+			\lstinline$printint( a ); /* 2 */$ \\
+		\end{quote}
+
+		The variable \code{b} is assigned the \ijargon{address} of variable \code{a}.
+        Then, the value \code{2} is assigned to the variable to which \code{b} points (\code{a}),
+        using the dereferencing operator (\code{*}). After this, \code{a} contains the
+        value \code{2}.
+
+		Pointers need not always refer to non-pointer variables; it is perfectly possible
+        for a pointer to refer to another pointer.  Pointers can also hold multiple levels
+        of indirection, and can be dereferenced multiple times:
+
+		\lstset{language=Inger}
+		\lstset{style=Source}
+		\begin{quote}
+			\lstinline$int a;$ \\
+			\lstinline$int *b = &a;$ \\	
+			\lstinline$int **c = &b;$ \\	
+			\lstinline$**c = 2;$ \\
+			\lstinline$printint( a ); /* 2 */$ \\
+		\end{quote}
+
+		Pointers have another use: they can contain the address of a \ijargon{dynamic variable}.
+        While ordinary variables declared using the declaration statements discussed earlier
+        are called \ijargonex{static variables}{static variable} and reside on the \ijargon{stack},
+        dynamic varibles live on the \ijargon{heap}. The only way to create them is by using
+        operating system functions to allocate memory for them, and storing their address in
+        a pointer, which must be used to access them for all subsequent operations until the
+        operating system is told to release the memory that the dynamic variable occupies.
+        The allocation and deallocation of memory for dynamic variables is beyond the scope
+        of this text.
+
+	\section{Functions}
+		
+		\lstset{language=Inger}
+		\lstset{style=Source}
+		Most of the examples thus far contained a single \ijargon{function}, prefixed with
+        they keyword \code{start}\index{start} and often postfixed with something like
+		\lstinline$void -> void$. In this section, we discuss how to write additional functions,
+        which are an essential element of \langname{} is one wants to write larger programs.
+		
+		The purpose of a function is to encapsulate part of a program and associate it with
+        a name or \ijargon{identifier}. Any \langname{} program consists of at least one
+        function: the \ijargon{start function}, which is marked with the keyword \code{start}.
+        To become familiar with the structure of a function, let us examine the syntax diagram
+        for a function (figure \ref{fig_syntax_function} and \ref{fig_syntax_formalparameters}).
+        The associated BNF is a bit lengthy, so we will not print it here.
+
+		\diagram{syntax_function.png}{Syntax diagram for \emph{function}}{fig_syntax_function}
+		\diagram{syntax_formalparameters.png}{Syntax diagram for \emph{formal parameter block}}{fig_syntax_formalparameters}
+
+		A function must be declared before it can be used. The declaration does not necessarily
+        have to precede the actual use of the function, but it must take place at some point.
+        The declaration of a function couples an identifier (the function name) to a set of
+        function parameters (which may be empty), a return value (which may be none), and
+        a function body. An example of a function declaration may be found in
+        listing \ref{listing_array} (the minmax function).
+
+		Function parameters are values given to the function which may influence the way
+        it executes. Compare this to mathematical function definitions: they take an
+		input variable (usually $x$) and produce a result. The function declarations in
+        \langname{} are in fact modelled after the style in which mathematical
+        functions are defined. Function parameters must always have names so that the
+        code in the function can refer to them.  The return value of a function does not
+        have a name. We will illustrate the declaration of functions with some
+        examples.
+
+ 		\begin{example}{Function Declarations}{ex_function_declarations}
+
+			The function \code{f} takes no arguments and produces no result. Although
+	        such a function may seem useless, it is still possible for it to have
+	        a \ijargon{side effect}, i.e. an influence besides returning a value:
+	
+			\lstset{language=Inger}
+			\lstset{style=Source}
+			\begin{quote}
+				\lstinline$f: void -> void$
+			\end{quote}
+
+			The function \code{g} takes an \code{int} and a \code{bool} parameter,
+            and returns an \code{int} value:
+
+			\begin{quote}
+				\lstinline$g: int a; bool b -> int$
+			\end{quote}
+
+			Finally, the function \code{h} takes a two-dimensional array of
+            \code{char} as an argument, and returns a pointer to an \code{int}:
+
+			\begin{quote}
+				\lstinline$h: char str[ ][ ] -> int *$
+			\end{quote}
+		\end{example}
+
+		In the previous example, several sample \ijargonex{function headers}{function header}
+        were given. Apart from a header, a function must also have a body, which is simply
+        a block of code (contained within braces).  From within the \ijargon{function body},
+        the programmer may refer to the function parameters as if they were local variables.
+
+ 		\begin{example}{Function Definition}{ex_function_definition}
+			Here is sample definition for the function \code{g} from the
+			previous example:
+
+			\begin{quote}
+				\lstinline$g: int a; bool b -> int$\\
+				\lstinline${$\\
+				\lstinline$    if( b == true )$\\
+				\lstinline$	   {$\\
+				\lstinline$        return( a );$\\
+				\lstinline$    }$\\
+				\lstinline$    else$\\
+				\lstinline$    {$\\
+				\lstinline$        return( -a );$\\
+				\lstinline$    }$\\
+				\lstinline$}$\\
+			\end{quote}
+		\end{example}
+
+		The last example illustrates the use of the \code{return} keyword to
+        return from a function call, while at the same time setting the return
+        value. All functions (except functions which return \code{void}) must have
+        a \code{return} statement somewhere in their code, or their return value
+        may never be set.
+
+		Some functions take no parameters at all. This class of functions is
+        called \code{void}, and we use the keyword \code{void} to identify them.
+        It is also possible that a function has no return value. Again, we use
+        they keyword \code{void} to indicate this. There are functions that take
+        no parameters and return nothing: double void.
+
+
+		Now that functions have been defined, they need to be invoked, since that's
+        the reason they exist. The \code{()} operator \jargon{applies} a function.
+        It must be supplied to call a function, even if that function takes no
+        parameters (\code{void}).
+
+ 		\begin{example}{Function Invocation}{ex_function_invocation}
+			The function \code{f} from example \ref{ex_function_declarations}
+			has no parameters. It is invoked like this:
+
+    		\begin{quote}
+				\lstinline$f();$
+			\end{quote}
+	
+			Note the use of \code{()}, even for a \code{void} function.
+			The function \code{g} from the same example might be invoked
+            with the following parameters:
+
+			\begin{quote}
+				\lstinline$int result = g( 3, false ); /* -3 */$
+			\end{quote}
+
+			The programmer is free to choose completely different values for
+			the parameters. In this example, constants have been supplied,
+            but it is legal to fill in variables or even complete expressions
+            which can in turn contain function calls:
+
+			\begin{quote}
+				\lstinline$int result = g( g( 3, false ), false ); /* 3 */$
+			\end{quote}
+		\end{example}
+
+		Parameters are always passed \ijargon{by value}, which means that their
+        value is copied to the target function. If that function changes the
+        value of the parameter, the value of the original variable remains
+        unchanged:
+
+ 		\begin{example}{By Value vs. By Reference}{ex_by_val_by_ref}
+			Suppose we have the function \code{f}, which is defined so:
+
+			\begin{quote}
+				\lstinline$f: int a -> void$\\
+				\lstinline${$\\
+				\lstinline$    a = 2;$\\
+				\lstinline$}$\\
+			\end{quote}
+
+			To illustrate invocation \jargon{by value}, we do this:
+
+			\begin{quote}
+				\lstinline$int i = 1;$\\
+				\lstinline$f(i);$\\
+				\lstinline$printint(i); /* 1 */$\\
+			\end{quote}
+
+			It is impossible to change the value of the input variable
+            \code{i}, unless we redefine the function \code{f} to accept
+            a pointer:
+
+			\begin{quote}
+				\lstinline$f: int *a -> void$\\
+				\lstinline${$\\
+				\lstinline$    *a = 2;$\\
+				\lstinline$}$\\
+			\end{quote}
+
+        	Now, the address of \code{i} is passed \jargon{by value}, but
+            still points to the actual memory where \code{i} is stored. Thus
+            \code{i} can be changed:
+		
+			\begin{quote}
+				\lstinline$int i = 1;$\\
+				\lstinline$f(&i);$\\
+				\lstinline$printint(i); /* 1 */$\\
+			\end{quote}
+		\end{example}
+
+		
+	\section{Modules}
+
+		\lstset{language=Inger}
+		\lstset{style=Source}
+		Not all code for a program has to reside within the same \ijargon{module}.
+		A program may consist of multiple modules, one of which is the \jargon{main module},
+		which contains one (and only one) function marked with the keyword
+		\code{start}\index{start}. This is the function that will be executed when the
+        program starts. A start function must always be \lstinline$void -> void$,
+		because there is no code that
+        provides it with parameters and no code to receive a return value. There can be
+        only one module with a start function. The start function may be called by other
+        functions like any other function.
+
+		Data and functions may be shared between modules using the \code{extern}\index{extern}
+		keyword. If a variable \lstinline$int a$ is declared in one function, it
+		can be imported by another module with the statement \lstinline$extern int a$. The
+        same goes for functions. The \code{extern} statements are usually placed in a
+        \ijargon{header file}, with the \code{.ih} extension. Such files can be referenced
+        from \langname{} source code with the \code{\#import} directive.
+		
+		In listing \ref{listing_printint_c}, a C function called
+        \code{printint} is defined. We wish to use this function in an \langname{} program,
+        so we write a header file called \code{printint.ih} with contains an \code{extern}
+        statement to import the C function (listing \ref{listing_printint_ih}). Finally,
+        the \langname{} program in listing \ref{listing_printint_i} can access the C function
+        by importing the header file with the \code{\#import} directive.
+
+		\lstset{language=Clang}
+		\lstset{style=Source}
+		\begin{lstlisting}[float,caption={C-implementation of \code{printint} Function},label=listing_printint_c]
+		%!PRINTINT_C
+		\end{lstlisting}
+
+		\lstset{language=Inger}
+		\lstset{style=Source}
+		\begin{lstlisting}[float,caption={\langname{} Header File for \code{printint} Function},label=listing_printint_ih]
+		%!PRINTINT_IH
+		\end{lstlisting}
+
+		\lstset{language=Inger}
+		\lstset{style=Source}
+		\begin{lstlisting}[float,caption={\langname{} Program Using \code{printint}},label=listing_printint_i]
+		%!PRINTINT_I
+		\end{lstlisting}
+		
+	\section{Libraries}
+	
+		Unlike other popular programming languages, \langname{} has no builtin functions (e.g. \code{read},
+		\code{write}, \code{sin}, \code{cos} etc.). The programmer has to write all required functions himself,
+		or import them from a \ijargon{library}. \langname{} code can be linked into a static or
+		dynamic using the \ijargon{linker}. A library consists of one more code modules, all of which
+		do not contain a \code{start} function (if one or more of them do, the linker will complain). The
+		compiler not check the existence or nonexistence of \code{start} functions, except for printing
+		an error when there is more than one \code{start} function in the same module.
+		
+		Auxiliary functions need not be in an \langname{} module; they can also be implemented in the C
+		programming language. In order to use such functions in an \langname{} program, an \langname{}
+		header file (\code{.ih}) must be provided for the C library, which contains \code{extern} function
+		declarations for all the functions used in the \langname{} program. A good example is the 
+		\code{stdio.ih} header file supplied with the \langname{} compiler. This header file 
+		is an interface to the ANSI C \code{stdio} library.
+	
+	\section{Conclusion}
+
+		This concludes the introduction to the \langname{} language. Please refer to the
+        appendices, in particular appendices \ref{appendix:operations} and \ref{appendix:bnf}
+        for detailed tables on operator precedence and the BNF productions for the entire
+        language.
+
+
+        \begin{thebibliography}{99}
+         	\bibitem{lang_C}B. Kernighan and D. Ritchie: \emph{C Programming Language (2nd Edition)},
+         	    Prentice Hall, 1998.
+         	\bibitem{lang_Pascal_Compiler}A. C. Hartmann: \emph{A Concurrent Pascal Compiler for
+         		Minicomputers}, Lecture notes in computer science, Springer-Verlag, Berlin 1977.
+         	\bibitem{lang_LangWorld}M. Marcotty and H. Ledgard: \emph{The World of Programming Languages},
+         	    Springer-Verlag, Berlin 1986., pages 41 and following.
+         	\bibitem{lang_ANSI_C}American National Standards Institute: 
+         		\emph{ANSI X3.159-1989. American National Standard for information systems - 
+         		Programming Language C}, ANSI, New York, USA 1989.
+         	\bibitem{lang_EBNF}R. S. Scowen: \emph{Extended BNF \- a Generic Base Standard},
+         		Final Report, SEG C1 N10 (DITC Software Engineering Group),
+         		National Physical Laboratory, Teddington, Middlesex, UK 1993.
+         	\bibitem{lang_C_spec}W. Waite: \emph{ANSI C Specification},\\ 
+         		\code{http://www.cs.colorado.edu/$\sim$eliuser/c\_html/c.html}
+            \bibitem{lang_PascalUserManual}N. Wirth and K. Jensen: \emph{PASCAL User Manual and Report},
+                Lecture notes in computer science, Springer-Verlag, Berlin 1975.
+        \end{thebibliography}
+        
+

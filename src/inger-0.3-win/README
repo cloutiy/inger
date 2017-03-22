@@ -1,0 +1,11 @@
+This is the 0.3 release of the Inger compiler, 
+built with DJGPP for Windows.
+
+To compile an Inger source, run:
+
+inger.exe source.i
+
+to obtain source.s. Run this assembler
+source through GNU as and link with ld.
+
+

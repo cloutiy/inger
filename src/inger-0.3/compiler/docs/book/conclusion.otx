@@ -1,0 +1,28 @@
+\chapter{Conclusion} \label{chap_conclusion}
+    
+
+All parts how to build a compiler, from the setup of a language to the code
+generation, have now been discussed. Using this book as a reference, it should 
+be possible to build your own compiler.
+
+The compiler we build in this book is not innovating. Lots of this type of compiler
+(for imperative languages) compilers already exist, only the language differs:
+examples include compilers for \code{C} or \code{Pascal}.
+
+Because the \langname{} compiler is a low-level compiler, it is extremely suitable
+for system programming (building operating systems). The same applies to game 
+programming and programming command line applications (such as UNIX filter tools).
+
+We hope you will be able to put the theory and practical examples we described in this book
+to use, in order to build your own compliler. It is up to you now!
+
+
+
+
+        
+        
+        
+        
+ 
+	    
+               

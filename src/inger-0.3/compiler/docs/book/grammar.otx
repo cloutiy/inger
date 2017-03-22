@@ -1,0 +1,1490 @@
+% grammar.otx
+% Practical Compiler Construction
+% Chapter: Grammar
+
+
+\chapter{Grammar} \label{chap_grammar}
+
+	\map{map2grammar.png}
+
+    \section{Introduction}
+    
+    % "syntax errors"
+    
+	This chapter will introduce the concepts of \ijargon{language}
+	and \ijargon{grammar} in both informal and formal terms.
+	After we have established exactly what a grammar is, we 
+	offer several example grammars with	documentation.
+	
+	This introductory section discusses the value of the 
+	material that follows in writing a compiler. A compiler can
+	be thought of as a sequence of actions, performed on some code
+	(formulated in the source language) that transform that code
+	into the desired output. For example, a Pascal compiler
+	transforms Pascal code to assembly code, and a Java compiler
+	transforms Java code to its corresponding Java bytecode.
+	
+	If you have used a compiler in the past, you may be familiar
+	with ``syntax errors''. These occur when the input code does
+	not conform to a set of rules set by the language specification.
+	You may have forgotten to terminate a statement with a semicolon,
+	or you may have used the \code{THEN} keyword in a C program (the C 
+	language defines no \code{THEN} keyword).
+	
+	One of the things that a compiler does when transforming source
+	code to target code is check the structure of the source code.
+	This is a required step before the compiler can move on to 
+	something else. 
+	
+	The first thing we must do when writing a compiler is write 
+	a grammar for the source language. This chapter explains what
+	a grammar is, how to create one. Furthermore, it introduces
+	several common ways of writing down a grammar.
+	
+	\section{Languages}
+	
+	% Natural vs formal languages.
+	In this section we will try to formalize the concept of a
+	\jargon{language}. When thinking of languages, the first 
+	languages that usually come to mind are \ijargonex{natural languages}{natural language} 
+	like English or French. This is a class of languages that
+	we will only consider in passing here, since they are
+	very difficult to understand by a computer. There is another
+	class of languages, the \emph{computer} or \emph{formal}
+	languages\index{computer language}\index{formal language},
+	that are far easier to parse since they obey
+	a rigid set of rules. This is in constrast with natural
+	languages, whose leniant rules allow the speaker a great 
+	deal of freedom in expressing himself.
+	
+	Computers have been and are actively used to translate
+	natural languages, both for professional purposes (for example, voice-operated
+	computers or Microsoft SQL Server's English Query) and in games.
+	This first so-called \ijargon{adventure game}\footnote{In early 
+	1977, Adventure swept the ARPAnet. Willie Crowther was the
+	original author, but Don Woods greatly 	expanded the game
+	and unleashed it on an unsuspecting network. When Adventure
+	arrived at MIT, the reaction was typical: after everybody
+	spent a lot of time doing nothing but solving the game
+	(it's estimated that Adventure set the entire computer
+	industry back two weeks), the true lunatics began to think
+	about how they could do it better [proceeding to write Zork]
+	(Tim Anderson, ``The History of Zork -- First in a Series'' 
+	New Zork Times; Winter 1985)} was written as early as 1975 and
+	it was played by typing in English commands.
+	
+	% Definition of alphabet.
+	All languages draw the words that they allow to be used
+	from a pool of words, called the \ijargon{alphabet}. This is
+	rather confusing, because we tend to think of the alphabet 
+	as the 26 latin letters, A through Z. 
+	However, the definition of a language is not
+	concerned with how its most basic elements, the words, 
+	are constructed from individual letters, but how these words
+	are strung together. In definitions, an alphabet is denoted
+	as $\Sigma$.
+	
+	% L is a part of S*.
+	A language is a collection of sentences or \ijargon{strings}. 
+	From all the words
+	that a language allows, many sentences can be built but only
+	some of these sentences are valid for the language under
+	consideration. All the sentences that may be constructed from
+	an alphabet $\Sigma$ are denoted $\Sigma^{*}$. Also, there exists
+	a special sentence: the sentence with no words in it. This sentence
+	is denoted $\lambda$.
+	
+	In definitions, we refer to words using lowercase letters at the
+	beginning of our alphabet ($a, b, c$...), while we refer to sentences
+	using letters near the end of our alphabet ($u,v,w,x$...).
+	We will now define how sentences may be built from words.
+	
+	% What is S, what is S*?
+	\begin{definition}{Alphabet}{definition:alphabet}
+	Let $\Sigma$ be an alphabet. $\Sigma^{*}$, the set of strings over
+	$\Sigma$, is defined recursively as follows:
+	
+	\begin{enumerate}
+	  \item Basis: $\lambda$ $\in$ $\Sigma^{*}$.
+	  \item Recursive step: If $w$ $\in$ $\Sigma^{*}$, then $wa$ $\in$ $\Sigma^{*}$.
+	  \item Closure: $w$ $\in$ $\Sigma^{*}$ only if it can be obtained from $\lambda$ by a finite number of applications of the recursive step.
+	\end{enumerate}
+	\end{definition}
+	
+	This definition may need some explanation. It is put using
+	\ijargon{induction}. What this means will become clear in a moment.
+	
+	In the \ijargon{basis} (line 1 of the defintion), we state that
+	the empty string ($\lambda$) is a sentence over $\Sigma$. This is
+	a statement, not proof. We just state that for any alphabet $\Sigma$, 
+	the empy string $\lambda$ is among the sentences that may be 
+	constructed from it.
+	
+	In the \ijargon{recursive step} (line 2 of the definition), 
+	we state that given a string $w$ that
+	is part of $\Sigma^{*}$, the string $wa$ is also part of 
+	$\Sigma^{*}$. Note that $w$ denotes a string, and $a$ denotes a
+	single word. Therefore what we mean is that given a string generated
+	from the alphabet, we may append any word from that alphabet to it
+	and the resulting string will still be part of the set of strings
+	that can be generated from the alphabet.
+	
+	Finally, in the \ijargon{closure} (line 3 of the definition), we
+	add that all the strings that can be built using the basis
+	and recursive step are part of the set of strings over $\Sigma^{*}$,
+	and all the other strings are not. You can think of this as a
+	sort of safeguard for the definition. In most inductive defintions,
+	we will leave the closure line out.
+	
+	Is $\Sigma^{*}$, then, a language? The answer is no. $\Sigma^{*}$
+	is the set of all possible strings that may be built using the
+	alphabet $\Sigma$. Only some of these strings are actually valid
+	for a language. Therefore a language over an alphabet $\Sigma$
+	is a subset of $\Sigma^{*}$.
+	
+	As an example, consider a small part of the English language, with
+	the alphabet \{ 'dog', 'bone,', the', 'eats' \} 
+	(we	cannot consider the actual English language, as it has far
+	too many words to list here). From this alphabet, we can derive
+	strings using definition \ref{definition:alphabet}:
+	
+	\begin{quote}
+		\emph{
+		   $\lambda$
+		\\ dog
+		\\ dog dog dog
+		\\ bone dog the
+		\\ the dog eats the bone
+		\\ the bone eats the dog
+		}
+	\end{quote}
+	
+	Many more strings are possible, but we can at least see that
+	most of the strings above are not valid for the English language:
+	their structure does not obey the rules of English grammar. Thus
+	we may conclude that a language over an alphabet $\Sigma$ is a
+	subset of $\Sigma^{*}$ \jargon{that follows certain grammar rules}.
+	
+	If you are wondering how all this relates to compiler construction,
+	you should realize that one of the things that a compiler does
+	is check the structure of its input by applying grammar rules.
+	If the structure is off, the compiler prints a syntax error.
+	
+
+	\section{Syntax and Semantics}
+	
+	To illustrate the concept of grammar, let us examine the
+	following line of text: 
+    
+	\begin{quote}
+		\begin{verbatim}
+			jumps the fox the dog over
+		\end{verbatim}
+	\end{quote}
+	
+	Since it obviously does not obey the rules of English grammar,
+	this sentence is meaningless. It is said to be 
+	\jargon{syntactically incorrect}. The \ijargon{syntax} of a sentence is
+	its form or structure. Every sentence in a language must 
+	obey to that language's	syntax for it to have meaning.
+	
+	Here is another example of a sentence, whose meaning is unclear:
+	
+	\begin{quote}
+		\begin{verbatim}
+			the fox drinks the color red
+		\end{verbatim}
+	\end{quote}
+	
+	Though possibly considered a wondrous statement in Vogon poetry,
+	this statement has no meaning in the English language. 
+	We know that the color red cannot be drunk, so that although
+	the sentence is syntactically correct, it conveys no useful
+	information, and is therefore considered incorrect. Sentences whose
+	structure conforms to a language's syntax but whose meaning 
+	cannot be understood are said to be \emph{semantically}\index{semantics} 
+	incorrect.
+	
+	The purpose of a grammar is to give a set of rules which
+	all the sentences of a certain language must follow. It should
+	be noted that speakers of a natural language (like English or 
+	French) will generally understand sentences that differ from
+	these rules, but this is not so for formal languages used 
+	by computers. All sentences are required to adhere to the grammar
+	rules without deviation for a computer to be able to understand
+	them.
+
+ 	In \jargon{Compilers: Principles, Techniques and Tools} (\cite{grammar_aho}),
+    Aho defines a grammar more formally:
+
+	\begin{quote}
+		\emph{A grammar is a formal device for specifying a potentially infinite language
+        (set of strings) in a finite way.}
+	\end{quote}
+
+	Because language semantics are hard to express in a set of rules
+	(although we will show a way to deal with sematics in part III),
+	rammars deal with syntax only: a grammar
+	defines the structure of sentences in a language.
+	
+    \section{Production Rules}
+    In a grammar, we are not usually interested in the individual 
+    letters that make up a word, but in the words themselves. 
+    We can give
+    these words names so that we can refer to them in a grammar.
+    For example, there are very many words that can be the subject
+    or object of an English sentence ('fox', 'dog', 'chair' and so on) 
+    and it would not be feasible to list them all. Therefore we 
+    simply refer to them as 'noun'. In the same way we can give
+    all words that precede nouns to add extra information (like 
+    'brown', 'lazy' and 'small') a name too: 'adjective'. We call 
+    the set of all articles ('the', 'a', 'an') 'article'.
+    Finally, we call all verbs 'verb'. Each of these names
+    represent a set of many words, with the exception of 'article', 
+    which has all its members already listed.
+    
+    Armed with this new terminology, we are now in a position to
+    describe the form of a very simple English sentence:
+    
+    \lstset{language=BNF}
+    \lstset{style=BNF}
+    \begin{lstlisting}
+sentence:	article adjective noun verb adjective noun.
+	\end{lstlisting}
+	
+	From this lone \ijargon{production rule}, we can generate (produce) English 
+	sentences. We can replace every set name to the right of the colon
+	with one of its elements. For example, we can replace 
+	\code{article} with	'the', \code{adjective} with 'quick', 
+	\code{noun} with 'fox' and so on. This way we can build sentences
+	such as
+	
+	\begin{quote}
+		\begin{verbatim}
+			the quick fox eats a delicious banana
+			the delicious banana thinks the quick fox
+			a quick banana outruns a delicious fox
+		\end{verbatim}
+	\end{quote}
+	
+	The structure of these sentences matches the preceding rule, which
+	means that they conform to the syntax we specified. Incidentally, 
+	some of these sentences have no real meaning, thus illustrating
+	that semantic rules are not included in the grammar rules we
+	discuss here.
+	
+	We have just defined a grammar, even though it contains only one
+	rule that allows only one type of sentence. Note that our grammar
+	is a so-called \ijargon{abstract grammar}, since it does not specify
+	the actual words that we may use to replace the word classes
+	(article, noun, verb) that we introduced. 
+	
+	So far we have given names to classes of individual words. We can 
+	also assign names to common combinations of words. This requires
+	multiple rules, making the individual rules simpler:
+	
+    \lstset{language=BNF}
+    \lstset{style=BNF}
+    \begin{lstlisting}
+sentence:	object verb object.
+object:		article adjective noun.
+	\end{lstlisting} 
+    
+	This grammar generates the same sentences as the previous one,
+	but is somewhat easier to read. Now we will also limit the
+	choices that we can make when replacing	word classes by
+	introducing some more rules:
+	
+    \lstset{language=BNF}
+    \lstset{style=BNF}
+    \begin{lstlisting}
+noun:		"fox".
+noun:		"banana".
+verb: 		"eats".
+verb:		"thinks".
+verb:		"outruns".
+article:	"a".
+article:	"the".
+adjective:	"quick".
+adjective: 	"delicious".
+	\end{lstlisting} 
+	
+	Our grammar is now extended so that it is no longer an abstract grammar.
+	The rules above dictate how \ijargonex{nonterminals}{nonterminal} (abstract
+	grammar elements like \code{object} or \code{article}) may be replaced
+	with concrete elements of the language's \ijargon{alphabet}. The alphabet
+	consists of all a the \ijargonex{terminal symbols}{terminal symbol} or
+	\ijargonex{terminals}{terminal} in a language (the actual words). In the
+	productions rules listed above, terminal symbols are printed in bold.
+	
+	Nonterminal symbols are sometimes called \ijargonex{auxiliary symbols}{auxiliary symbol},
+	because they must be removed from any sentential form in order to create
+	a concrete sentence in the language.  
+	
+	Production rules are called production rules for a reason: they are used
+	to produce concrete sentences from the topmost nonterminal, or 
+	\ijargon{start symbol}. A concrete sentence may be \jargon{derived}
+	from the start symbol by systematically selecting nonterminals and replacing
+	them with the right hand side of a suitable production rule. In the listing
+	below, we present the production rules for the grammar
+	we have constructed so far during this chapter. Consult
+	the following example, in which we use this grammar to derive a sentence.
+	
+    \lstset{language=BNF}
+    \lstset{style=BNF}
+    \lstset{stepnumber=1}
+    \begin{lstlisting}
+sentence:	object verb object.
+object:		article adjective noun.
+noun:		"fox".
+noun:		"banana".
+verb: 		"eats".
+verb:		"thinks".
+verb:		"outruns".
+article:	"a".
+article:	"the".
+adjective:	"quick".
+adjective: 	"delicious".
+    \end{lstlisting}
+
+	\begin{center}
+		\begin{tabular}{llc}
+			\multicolumn{2}{l}{\tableheader{Derivation}} & \tableheader{Rule Applied} \\
+			\hline
+			                  & \lstinline$'sentence'$								&   \\
+			$\Longrightarrow$ & \lstinline$'object' verb object$ 					& 1 \\
+			$\Longrightarrow$ & \lstinline$'article'adjective noun verb object$ 	& 2 \\
+			$\Longrightarrow$ & \lstinline$"the" 'adjective' noun verb object$ 		& 9 \\
+			$\Longrightarrow$ & \lstinline$"the" "quick" 'noun' verb object$ 		& 2 \\
+			$\Longrightarrow$ & \lstinline$"the" "quick" "fox" 'verb' object$ 		& 3 \\
+			$\Longrightarrow$ & \lstinline$"the" "quick" "fox" "eats" 'object'$ 		& 5 \\
+			$\Longrightarrow$ & \lstinline$"the" "quick" "fox" "eats" 'article' adjective noun$ 	& 2 \\
+			$\Longrightarrow$ & \lstinline$"the" "quick" "fox" "eats" "a" 'adjective' noun$ 	& 8 \\
+			$\Longrightarrow$ & \lstinline$"the" "quick" "fox" "eats" "a" "delicious" 'noun'$ 	& 11 \\
+			$\Longrightarrow$ & \lstinline$"the" "quick" "fox" "eats" "a" "delicious" "banana"$ 	& 4 \\
+			\hline
+		\end{tabular}    	
+	\end{center}
+
+    The symbol $\Longrightarrow$ indicates the application of a production
+    rule, which the rule number of the rule applied in the right column. The
+    set of all sentences which can be derived by repeated application of
+    the production rules (deriving) is the language defined by these
+    production rules.
+    
+    The string of terminals and nonterminals in each step is called a
+    \ijargon{sentential form}. The last string, which contains only
+    terminals, is the actual \jargon{sentence}. This means that the
+    process of derivation ends once all nonterminals have been
+    replaced with terminals.
+    
+    You may have noticed that in every step, we consequently replaced the 
+    \jargon{leftmost} nonterminal in the sentential form with one of its 
+    productions.  This is why the derivation we have performed is called
+    a \ijargon{leftmost derivation}. It is also correct to perform a
+    rightmost derivation by consequently replacing the rightmost
+    nonterminal in each sentential form, or any derivation in between.
+    
+    Our current grammar states that every noun is preceded by
+    precisely one adjective. We now want to modify our grammar
+    so that it allows us to specify zero, one or more adjectives
+    before each noun. This can be done by introducing \ijargon{recursion},
+    where a production rule for a nonterminal may again contain that nonterminal:
+    
+    \lstset{language=BNF}
+    \lstset{style=BNF}
+    \begin{lstlisting}
+object:			article adjectivelist noun.
+adjectivelist:	adjective adjectivelist.
+adjectivelist:	[e].
+	\end{lstlisting}    
+	
+	The rule for the nonterminal \code{object} has been altered to include
+	\code{adjectivelist} instead of simply \code{adjective}. An adjective list
+	can either be empty (nothing, indicated by $\epsilon$), or an adjective,
+	followed by another adjective list and so on. The following sentences may
+	now be derived:
+
+	\begin{center}	
+		\begin{tabular}{ll}
+			\hline
+			                  & \lstinline$_sentence_$								 \\
+			$\Longrightarrow$ & \lstinline$_object_ verb object$ 					 \\
+			$\Longrightarrow$ & \lstinline$_article_ adjectivelist noun verb object$ \\
+			$\Longrightarrow$ & \lstinline$"the" _adjectivelist_ noun verb object$ 	 \\
+			$\Longrightarrow$ & \lstinline$"the" _noun_ verb object$ 	 \\
+			$\Longrightarrow$ & \lstinline$"the" "banana" _verb_ object$ 	 \\
+			$\Longrightarrow$ & \lstinline$"the" "banana" "outruns" _object_$ 	 \\
+			$\Longrightarrow$ & \lstinline$"the" "banana" "outruns" _article_ adjectivelist noun$ 	 \\
+			$\Longrightarrow$ & \lstinline$"the" "banana" "outruns" "the" _adjectivelist_ noun$ 	 \\
+			$\Longrightarrow$ & \lstinline$"the" "banana" "outruns" "the" _adjective_ adjectivelist noun$ 	 \\
+			$\Longrightarrow$ & \lstinline$"the" "banana" "outruns" "the" "quick" _adjectivelist_ noun$ 	 \\
+			$\Longrightarrow$ & \lstinline$"the" "banana" "outruns" "the" "quick" _adjective_ adjectivelist noun$ 	 \\
+			$\Longrightarrow$ & \lstinline$"the" "banana" "outruns" "the" "quick" "delicious" _adjectivelist_ noun$ 	 \\
+			$\Longrightarrow$ & \lstinline$"the" "banana" "outruns" "the" "quick" "delicious" _noun_$ 	 \\
+			$\Longrightarrow$ & \lstinline$"the" "banana" "outruns" "the" "quick" "delicious" "fox"$ 	 \\
+			\hline
+		\end{tabular}    	
+	\end{center}
+
+    \section{Context-free Grammars}
+    
+    After the introductory examples of sentence derivations, it is time to deal 
+    with some formalisms. All the grammars we will work with in this book are
+    \ijargonex{context-free grammars}{context-free grammar}:
+    
+    \begin{definition}{Context-Free Grammar}{def_contextfree_grammar}
+    	A \ijargon{context-free grammar} is a quadruple $(V,\Sigma,P,S)$ where
+    	$V$ is a finite set of variables (nonterminals), $\Sigma$ is a finite
+    	set of terminals, $P$ is a finite set of production rules and $S \in V$ is
+    	an element of $V$ designated as the \ijargon{start symbol}.
+    \end{definition}
+    
+    The grammar listings you have seen so far were context-free grammars, consisting of
+    a single nonterminal on the left-hand side of each production rule (the mark of
+    a context-free grammar). In fact, a symbol is a nonterminal only when it acts
+    as the left-hand side of a production rule. The right side of every production rule 
+    may either be empty (denoted using an epsilon, $\epsilon$), or contain any combination of 
+    terminals and nonterminals. This notation is called the 
+    \ijargon{Backus-Naur form}\footnote{John Backus and Peter Naur introduced 
+    for the first time a formal notation to describe the syntax of a given language 
+    (this was for the description of the ALGOL 60 programming language). 
+    To be precise, most of BNF was introduced by Backus in a report presented
+    at an earlier UNESCO conference on ALGOL 58. Few read the report, but when
+    Peter Naur read it he was surprised at some of the differences he found between
+    his and Backus's interpretation of ALGOL 58. He decided that for the successor
+    to ALGOL, all participants of the first design had come to recognize some
+    weaknesses, should be given in a similar form so that all participants
+    should be aware of what they were agreeing to. He made a few
+    modificiations that are almost universally used and drew up on his
+    own the BNF for ALGOL 60 at the meeting where it was designed. Depending
+    on how you attribute presenting it to the world, it was either by Backus
+    in 59 or Naur in 60. (For more details on this period of programming
+    languages history, see the introduction to Backus's Turing award
+    article in Communications of the ACM, Vol. 21, No. 8, august 1978. 
+    This note was suggested by William B. Clodius from Los Alamos Natl. Lab).}, 
+    after its inventors, John Backus and Peter Naur.  
+    
+    The process of deriving a valid sentence from the start symbol (in our previous examples,
+    this was \code{sentence}), is executed by repeatedly replacing a nonterminal by the
+    right-hand side of any one of the production rules of which it acts as the left-hand side,
+    until no nonterminals are left in the \ijargon{sentential form}. Nonterminals are always
+    abstract names, while terminals are often expressed using their actual (real-world)
+    representations, often between quotes (e.g. \code{"+"}, \code{"while"}, \code{"true"}) or
+    printed bold (like we do in this book).  
+    
+    The left-hand side of a production rule is separated from the right-hand side by a colon, and
+    every production rule is terminated by a period. Whether you do this does not affect 
+    the meaning of the production rules at all, but is considered good style and part of the
+    specificiation of Backus Naur Form (BNF). Other notations are used.
+    
+    As a running example, we will work with a simple language for mathematical expressions,
+    analogous to the language discussed in the introduction to this book. 
+    The language is capable of expressing the following types of sentences:
+    
+    \begin{quote}
+    	\begin{verbatim}
+    		1 + 2 * 3 + 4
+    		2 ^ 3 ^ 2
+    		2 * (1 + 3)
+    	\end{verbatim}
+    \end{quote}
+    
+    In listing \ref{listing_grammar_exp_1}, we give a sample context-free grammar for this language.
+    
+    \lstset{language=BNF}
+    \lstset{style=BNF}
+    \begin{lstlisting}[float, caption={Sample Expression Language}, label=listing_grammar_exp_1]
+expression:		expression "+" expression.
+expression:		expression "-" expression.
+expression:		expression "*" expression.
+expression:		expression "/" expression.
+expression:		expression "^" expression.
+expression:		number.
+expression:     "(" expression ")".
+number:			"0".
+number:			"1".
+number:			"2".
+number:			"3".
+number:			"4".
+number:			"5".
+number:			"6".
+number:			"7".
+number:			"8".
+number:			"9".
+    \end{lstlisting}
+    
+    Note the periods that terminate each production rule. You can see that there are only
+    two nonterminals, each of which have a number of alternative production rules 
+    associated with them. We now state that \code{expression} will be the distinguished
+    nonterminal that will act as the start symbol, and we can use these production rules
+    to derive the sentence \code{1 + 2 * 3} (see table \ref{table_sample_derivation}).
+
+    \begin{table} \label{table_sample_derivation}
+		\begin{center}
+			\begin{tabular}{ll}
+				\hline
+			                  	& \lstinline$_expression_$			 \\
+				$\Longrightarrow$ & \lstinline$_expression_ "*" expression$	 \\
+				$\Longrightarrow$ & \lstinline$_expression_ "+" expression "*" expression$ \\
+				$\Longrightarrow$ & \lstinline$_number_ "+" expression "*" expression$ \\
+				$\Longrightarrow$ & \lstinline$"1" "+" _expression_ "*" expression$ \\
+				$\Longrightarrow$ & \lstinline$"1" "+" _number_ "*" expression$ \\
+				$\Longrightarrow$ & \lstinline$"1" "+" "2" "*" _expression_$ \\
+				$\Longrightarrow$ & \lstinline$"1" "+" "2" "*" _number_$ \\
+				$\Longrightarrow$ & \lstinline$"1" "+" "2" "*" "3"$ \\		
+				\hline
+			\end{tabular}    	
+			\caption{Derivation scheme for \code{1 + 2 * 3}}
+		\end{center}
+	\end{table}
+	
+	The grammar in listing \ref{listing_grammar_exp_1} has all its keywords (the operators
+	and digits) defined in it as terminals. One could ask how this grammar deals
+	with whitespace, which consists of spaces, tabs and (possibly) newlines. We would
+	naturally like to allow an abitrary amount of whitespace to occur between two tokens
+	(digits, operators, or parentheses), but the term \ijargon{whitespace} occurs
+	nowhere in the grammar. The answer is that whitespace is not usually included
+	in a grammar, although it could be. The \ijargon{lexical analyzer} uses whitespace
+	to see where a word ends and where a new word begins, but otherwise discards it
+	(unless the witespace occurs within comments or strings, in which case it is
+	significant). In our language, whitespace does not have any significance at all
+	so we assume that it is discarded. 
+	
+	We would now like to extend definition \ref{def_contextfree_grammar} a little further, 
+	because we have not clearly stated what a production rule is.
+	
+	\begin{definition}{Production Rule}{def_production_rule}
+		In the quadruple $(V,\Sigma,S,P)$ that defines a context-free grammar,
+		$P \subseteq N \times (V \cup \Sigma)^{*}$ is a finite set of production rules. 
+ 	\end{definition}
+ 	
+ 	Here, $(V \cup \Sigma)$ is the union of the set of nonterminals and the set of terminals,
+ 	yielding the set of all symbols. $(V \cup \Sigma)^{*}$ denotes the set of finite
+ 	strings of elements from $(V \cup \Sigma)$. In other words, $P$ is a set of 2-tuples with
+ 	on the left-hand side a nonterminal, and on the right-hand side a string constructed
+ 	from items from $V$ and $\Sigma$. It should now be clear that the following are examples
+ 	of production rules:
+ 	
+    \lstset{language=BNF}
+    \lstset{style=BNF}
+    \begin{lstlisting}
+expression:		expression "*" expression.
+number:			"3".
+    \end{lstlisting}
+    
+    We have already shown that production rules are used to derive valid sentences from the
+    start symbol (sentences that may occur in the language under consideration). The formal
+    method used to derive such sentences are (also see \jargon{Languages and Machines} by 
+    Thomas Sudkamp (\cite{grammar_languages}):
+    
+    \begin{definition}{String Derivation}{def_string_derivation}
+    	Let $G = (V,\Sigma,S,P)$ be a context-free grammar and $v \in (V \cup \Sigma)^{*}$. 
+    	The set of strings derivable from $v$ is recursively defined as follows:
+    	
+    	\begin{enumerate}
+    		\item Basis: $v$ is derivable from $v$.
+    		\item Recursive step: If $u = xAy$ is derivable from $v$ and 
+    		$A \longrightarrow w \in P$, then $xwy$ is derivable from $v$.
+    		\item Closure: Precisely those strings constructed from $v$ by finitely many
+    		applications of the recursive step are derivable from $v$.
+    	\end{enumerate}
+    \end{definition}
+    
+    This definition illustrates how we use lowercase latin letters to represent strings
+    of zero or more terminal symbols, and uppercase latin letters to represent
+    a nonterminal symbol. Furthermore, we use lowercase greek letters to denote
+    strings of terminal and nonterminal symbols.
+    
+    A close formula may be given for all the sentences derivable from a given grammar,
+    simultaneously introducing a new operator:
+    
+    \begin{equation}
+    	\{ s \in \Sigma^{*} : S \Longrightarrow^{*} s \}
+    \end{equation}
+    
+    We have already discussed the operator $\Longrightarrow$, which denotes the derivation
+    of a sentential form from another sentential form by applying a production rule. The
+    $\Longrightarrow$ relation is defined as
+
+    \[
+    	\{(\sigma{}A\tau, \sigma\alpha\tau) \in (V \cup \Sigma)^{*} \times (V \cup \Sigma)^{*} : \sigma, \tau \in (V \cup \Sigma)^{*} \land (A,\alpha) \in P \}
+    \]
+
+	which means, in words: $\Longrightarrow$ is a collecton of 2-tuples, and is therefore a
+    relation which binds the left element of each 2-tuple to the right-element, thereby
+    defining the possible replacements (productions) which may be performed. In the tuples,
+    the capital latin letter A represents a nonterminal symbol which gets replaced by a
+    string of nonterminal and terminal symbols, denoted using the greek lowercase letter $\alpha$.
+    $\sigma$ and $\tau$ remain unchanged and serve to illustrate that a replacement (production)
+    is \ijargon{context-insensitive} or \ijargon{context-free}. Whatever the actual value of
+    the strings $\sigma$ and $\tau$, the replacement can take place. We will encounter other
+    types of grammars which include context-sensitive productions later.
+
+    The $\Longrightarrow^{*}$ relation is the reflexive closure of the relation $\Longrightarrow$.
+    $\Longrightarrow^{*}$ is used to indicate that multiple production rules have been applied
+    in succession to achieve the result stated on the right-hand side. The formula 
+    $\alpha \Longrightarrow^{*} \beta$ denotes an arbitrary derivation starting with $\alpha$
+    and ending with $\beta$. It is perfectly valid to rewrite the derivation scheme we presented 
+    in table \ref{table_sample_derivation} using the new operator (see table
+    \ref{table_sample_derivation_improved}). We can use this approach to leave out derivations
+    that are obvious, analogous to the way one leaves out trivial steps in a mathematical proof.
+    
+    \begin{table} \label{table_sample_derivation_improved}
+		\begin{center}
+			\begin{tabular}{ll}
+				\hline
+		 	                  	  	  & \lstinline$_expression_$			 \\
+				$\Longrightarrow^{*}$ & \lstinline$_expression_ "+" expression "*" expression$ \\
+				$\Longrightarrow^{*}$ & \lstinline$"1" "+" _number_ "*" expression$ \\
+				$\Longrightarrow^{*}$ & \lstinline$"1" "+" "2" "*" "3"$ \\		
+				\hline
+			\end{tabular}    	
+			\caption{Compact derivation scheme for \code{1 + 2 * 3}}	
+		\end{center}
+	\end{table}
+	
+    The concept of \ijargon{recursion} is illustrated by the production rule 
+    $expression: "(" expression ")"$. When deriving a sentence, the nonterminal
+    \code{expression} may be replaced by itself (but between parentheses). This
+    recursion may continue indefinitely, termination being reached when another
+    production rule for \code{expression} is applied (in particular,
+    $expression: number$). 
+    
+    Recursion is considered \ijargon{left recursion} when the nonterminal on the
+    left-hand side of a production also occurs as the first symbol in the
+    right-hand side of the production. This applies to most of the production
+    rules for \code{expression}, for example:
+    
+    \lstset{language=BNF}
+    \lstset{style=BNF}
+    \begin{lstlisting}
+expression:		  expression "+" expression.
+    \end{lstlisting}
+    
+    While this property does not affect our ability to derive sentences from the
+    grammar, it does prohibit a machine from automatically parsing an input text
+    using \ijargon{determinism}. This will be discussed shortly. Left recursion
+    can be obvious (as it is in this example), but it can also be buried deeply
+    in a grammar. It some cases, it takes a keen eye to spot and remove
+    left recursion. Consider the following example of \ijargon{indirect recursion} 
+    (in this example, we use capital latin letters to indicate nonterminal
+	symbols and lowercase latin letters to indicate strings of terminal
+    symbols, as is customary in the compiler construction literature):
+
+    \begin{example}{Indirect Recursion}{ex_indirect_recursion}
+	    \lstset{language=BNF}
+	    \lstset{style=BNF}
+	    \begin{lstlisting}
+A: Bx
+B: Cy
+C: Az 
+C: x
+		\end{lstlisting}
+    	
+    	\code{A} may be replaced by \code{Bx}, thus removing
+    	an instance of \code{A} from a sentential form, and \code{B} may
+    	be replaced by \code{Cy}. \code{C} may be replaced by
+    	\code{Az}, which reintroduces \code{A} in the sentential form: 
+    	indirect recursion.
+    	
+    	This example was taken from \cite{grammar_feldbrugge}.
+    \end{example}
+
+	\section{The Chomsky Hierarchy}
+
+	An \emph{unrestricted rewriting system}\cite{grammar_aho} (grammar),
+	the collection of production rules is:
+
+	\[
+		P \subseteq (V \cup \Sigma)^{*} \times (V \cup \Sigma)^{*}
+	\]
+
+    This means that the most leniant form of grammar allows multiple symbols,
+    both terminals and nonterminals on the left hand side of a production rule.
+    Such a production rule is often denoted
+
+	\[
+		(\alpha, \omega)
+	\]
+
+	since greek lowercase letters stand for a finite string of terminal and nonterminal
+    symbols, i.e. $(V \cup \Sigma)^{*}$. The unrestricted grammar generates a \ijargon{type 0
+    language} according to the \ijargon{Chomsky hierarchy}. Noam Chomsky has defined four levels of grammars
+    which successively more severe restrictions on the form of production rules
+	which result in interesting classes of grammars.
+
+	A \ijargon{type 1 grammar} or \ijargon{context-sensitive grammar} is one in which each
+    production $\alpha \longrightarrow \beta$ is such that $\mid \beta \mid \ \geq \ \mid \alpha \mid$.
+    Alternatively, a context-sensitive grammar is sometimes defined as having productions of the form
+
+	\[
+		\gamma A \rho \longrightarrow \gamma \omega \rho
+	\]
+
+	where $\omega$ cannot be the empty string ($\epsilon$). This is, of course, the same definition.
+	A type 1 grammar generates a \ijargon{type 1 language}.
+
+	A \ijargon{type 2 grammar} or \ijargon{context-free grammar} is one in which each
+	production is of the form
+	
+	\[
+		A \longrightarrow \omega
+	\]
+	
+	where $\omega$ can be the empty string ($\epsilon$). A context-free grammar generates
+    a \ijargon{type 2 language}.
+
+	A \ijargon{type 3 grammar} or \ijargon{regular grammar} is either \ijargon{right linear},
+    with each production of the form
+	
+	\[
+		A \longrightarrow a	\quad\quad	or	\quad\quad A \longrightarrow aB
+	\]
+
+	or \ijargon{left-linear}, in which each production is of the form:
+
+	\[
+		A \longrightarrow a	\quad\quad	or	\quad\quad A \longrightarrow Ba
+	\]
+
+	A regular grammar generates a \ijargon{type 3 language}. Regular grammars
+    are very easy to parse (analyze the structure of a text written using
+    such a grammar) but are not very powerful at the same time. They are often
+    used to write lexical analyzers and were discussed in some detail in the
+    previous chapter. Grammars for most actual programming languages are
+    context free, since this type of grammar turns out to be easy to parse
+    and yet powerful. The higher classes (0 and 1) are not often used.
+
+	As it happens, the class of context-free languages (type 2) is not
+    very large. It turns out that there are almost no interesting languages
+    that are context-free. But this problem is easily solved by first
+    defining a superset of the language that is being designed, in order
+    to formalize the context-free aspects of this language. After that,
+    the remaining restrictions are defined using other means (i.e. semantic
+    analysis).
+
+	As an example of a context-sensitive aspect (from Meijer \cite{grammar_meijer}),
+	consider the fact that in
+    many programming languages, variables must be declared before they may
+    be used. More formally, in sentences of the form $\alpha X \beta X \gamma$,
+    in which the number of possible productions for $X$ and the length of the
+    production for $\beta$ are not limited, both instances of $X$ must always
+    have the same production. Of course, this cannot be expressed in a
+	context-free manner.\footnote{That is, unless there were a (low) limit on the number of
+    possible productions for $X$ and/or the length of $\beta$ were fixed and
+    small. In that case, the total number of possibilities is limited and
+    one could write a separate production rule for each possibility, thereby
+    regaining the freedom of context.} This is an immediate consequence
+    of the fact that the productions are context-free: every nonterminal may
+    be replaced by one of its right-hand sides \jargon{regardless of its context}.
+	Context-free grammars can therefore be spotted by the property that the
+    left-hand side of their production rules consist of precisely one nonterminal.
+	
+    \section{Additional Notation}
+    
+    In the previous section, we have shown how a grammar can be written for a simple
+    language using the Backus-Naur form (BNF). Because BNF can be unwieldy for
+    languages which contain many alternative production rules for each nonterminal or
+    involve many recursive rules (rules that refer to themselves), we also have the
+    option to use the \ijargon{extended Backus-Naur form} (EBNF). EBNF introduces
+    some meta-operators (which are only significant in EBNF and have no function
+    in the language being defined) which make the life of the grammar writer a little
+    easier. The operators are:
+    
+    \begin{quote}
+		\begin{center}
+			\begin{tabular}{lp{7.5cm}}
+				\tableheader{Operator} & \tableheader{Function} \\
+				\hline
+				\code{(} and \code{)}		& Group symbols together so that other meta-operators may be applied to them as a group. \\
+				\code{[} and \code{]}		& Symbols (or groups of symbols) contained within square brackets are optional. \\
+				\code{\{} and \code{\}}	& Symbols (or groups of symbols) between braces may be repeated zero or more times.\\
+				\code{$\mid$}				& Indicates a choice between two symbols (usually grouped with parentheses). \\
+				\hline
+			\end{tabular}    	
+		\end{center}
+	\end{quote}
+	
+	Our sample grammar can now easily be rephrased using EBNF (see listing
+	\ref{listing_grammar_exp_2}). Note how we are now able to combine multiple productions rules
+	for the same nonterminal into one production rule, but \jargon{be aware} that the alternatives
+	specified between pipes (\code{$\mid$}) still constitute multiple production rules. EBNF is
+    the syntax description language that is most often used in the compiler construction
+    literature.
+	
+    \lstset{language=BNF}
+    \lstset{style=BNF}
+    \begin{lstlisting}[float, caption={Sample Expression Language in EBNF}, label=listing_grammar_exp_2]
+expression:		  expression "+" expression
+              	| expression "-" expression
+				| expression "*" expression
+				| expression "/" expression
+				| expression "^" expression
+				| number
+				| "(" expression ")".
+number:			"0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9".
+    \end{lstlisting}
+
+    Yet another, very intuitive way of describing syntax that we have already used extensively
+    in the \langname{} language specification in chapter \ref{chap_langspec}, is the
+    \ijargon{syntax diagram}. The production rules from listing \ref{listing_grammar_exp_2} have
+    been converted into two syntax diagrams in figure \ref{fig_grammar_exp}.
+
+	\diagram{grammar_expression.png}{Syntax Diagrams for Mathematical Expressions}{fig_grammar_exp}
+
+    Syntax diagrams consist of terminals (in boxes with rounded corners) and nonterminals (in boxes
+    with sharp corners) connected by lines. In order to produce valid sentences, the user begins
+    with the syntax diagram designated as the top-level diagram. In our case, this is the
+    syntax diagram for \code{expression}, since \code{expression} is the \ijargon{start symbol}
+    in our grammar. The user then traces the line leading into the diagram, evaluating the
+    boxes he encounters on the way. While tracing lines, the user may follow only rounded corners,
+    never sharp ones, and may not reverse direction. When a box with a terminal is encountered,
+    that terminal is placed in the sentence that is written. When a box containing a nonterminal
+    is encountered, the user switches to the syntax diagram for that nonterminal. In our case,
+    there is only one nonterminal besides \code{expression} (\code{number}) and thus there are
+    only two syntax diagrams. In a grammar for a more complete language, there may be many
+    more syntax diagrams (consult appendix \ref{appendix:syntaxdiagrams} for the syntax
+    diagrams of the \langname{} language).
+
+    \begin{example}{Tracing a Syntax Diagram}{ex_tracing_diagram}
+		Let's trace the syntax diagram in figure \ref{fig_grammar_exp} to generate
+        the sentence
+		
+		\begin{quote}
+			\begin{verbatim}
+				1 + 2 * 3 - 4
+			\end{verbatim}
+		\end{quote}
+
+		We start with the \code{expression} diagram, since \code{expression} is the
+        start symbol. Entering the diagram, we face a selection: we can either move
+        to a box containing \code{expression}, move to a box containing the terminal
+        \code{(} or kmove to a box containing \code{number}. Since there are no parentheses
+        in the sentence that we want to generate, the second alternative is eliminated.
+        Also, if we were to move to \code{number} now, the sentence generation would
+        end after we generate only one digit, because after the \code{number} box, the
+        line we are tracing ends. Therefore we are left with only one alternative: move
+        to the \code{expression} box.
+
+        The \code{expression} box is a nonterminal box, so we must restart tracing the
+        \code{expression} syntax diagram. This time, we move to the \code{number} box.
+        This is also a nonterminal box, so we must pause our current trace and start tracing
+        the \code{number} syntax diagram. The \code{number} diagram is simple: it only offers
+        use one choice (pick a digit). We trace through \code{1} and leave the number diagram,
+        picking up where we left off in the \code{expression} diagram. After the \code{number}
+        box, the expression diagram also ends so we continue our first trace of the
+        \code{expression} diagram, which was paused after we entered an \code{expression}
+        box. We must now choose an operator. We need a \code{+}, so we trace through the
+        corresponding box. Following the line from \code{+} brings us to a second
+        \code{expression} box. We must once again pause our progress and reenter the
+        \code{expression} diagram. In the following interations, we pick \code{2},
+        \code{*}, \code{3}, \code{-} and \code{4}. Completing the trace is left as an
+        exercise to the reader.
+    \end{example}
+
+	Fast readers may have observed that converting (E)BNF production rules to syntax
+    diagrams does not yield very efficient syntax diagrams. For instance, the
+    syntax diagrams in figure \ref{fig_grammar_exp_improved} for our sample expression
+    grammar are simpler than the original ones, because we were able to remove most of
+    the recursion in the \code{expression} diagram.
+
+	\diagram{grammar_expression_improved.png}{Improved Syntax Diagrams for Mathematical Expressions}{fig_grammar_exp_improved}
+
+	At a later stage, we will have more to say about syntax diagrams. For now, we will
+    direct our attention back to the sentence generation process.
+
+    \section{Syntax Trees}
+
+	The previous sections included some example of sentence generation from a given grammar,
+    in which the generation process was visualized using a \ijargon{derivation scheme}
+    (such as table \ref{table_sample_derivation} on page \pageref{table_sample_derivation}. Much
+    more insight is gained from drawing a so-called \ijargon{parse tree} or
+    \ijargon{syntax tree} for the derivation.
+	
+	We return to our sample expression grammar (listing \ref{listing_grammar_exp_ebnf_2},
+    printed here again for easy reference) and generate the sentence
+
+    \begin{quote}
+		\begin{verbatim}
+			1 + 2 * 3
+		\end{verbatim}
+	\end{quote}
+
+    \lstset{language=BNF}
+    \lstset{style=BNF}
+    \begin{lstlisting}[float, caption={Sample Expression Language in EBNF}, label=listing_grammar_exp_ebnf_2]
+expression:		  expression "+" expression
+              	| expression "-" expression
+				| expression "*" expression
+				| expression "/" expression
+				| expression "^" expression
+				| number
+				| "(" expression ")".
+number:			"0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9".
+    \end{lstlisting}
+
+	We will derive this sentence using \ijargon{leftmost derivation} as shown in the
+    derivation scheme in table \ref{table_sample_derivation_leftmost}.
+
+    \begin{table} \label{table_sample_derivation_leftmost}
+		\begin{center}
+			\begin{tabular}{ll}
+				\hline
+			                  	& \lstinline$_expression_$			 \\
+				$\Longrightarrow$ & \lstinline$_expression_ "*" _expression_$	 \\
+				$\Longrightarrow$ & \lstinline$_expression_ "+" expression "*" expression$ \\
+				$\Longrightarrow$ & \lstinline$_number_ "+" expression "*" expression$ \\
+				$\Longrightarrow$ & \lstinline$"1" "+" _expression_ "*" expression$ \\
+				$\Longrightarrow$ & \lstinline$"1" "+" _number_ "*" expression$ \\
+				$\Longrightarrow$ & \lstinline$"1" "+" "2" "*" _expression_$ \\
+				$\Longrightarrow$ & \lstinline$"1" "+" "2" "*" _number_$ \\
+				$\Longrightarrow$ & \lstinline$"1" "+" "2" "*" "3"$ \\		
+				\hline
+			\end{tabular}    	
+			\caption{Leftmost derivation scheme for \code{1 + 2 * 3}}
+		\end{center}
+	\end{table}
+
+	The resulting parse tree is in figure \ref{fig_grammar_parse_tree_left}. Every nonterminal
+    encountered in the derivation has become a node in the tree, and the terminals (the
+    digits and operators themselves) are the leaf nodes. We can now easily imagine how a machine
+    would calculate the value of the expression \code{1 + 2 * 3}: every nonterminal node retrieves
+    the value of its children and performs an operation on them (addition, subtraction,
+    division, multiplication), and stores the result inside itself. This process occurs recursively,
+    so that eventually the topmost node of the tree, known as the \code{root node}, contains
+    the final value of the expression. Not all nonterminal nodes perform an operation on the
+    values of their children; the \code{number} node does not change the value of its child,
+    but merely serves as a placeholder. When a parent node queries the \code{number} node for its
+    value, it merely passes the value of its child up to its parent. The following recursive
+    definition states this approach more formally:
+
+	\begin{definition}{Tree Evaluation}{def_tree_evaluation}
+        The following algorithm may be used to evaluate the final value of an expression
+        stored in a tree.
+
+    	Let $n$ be the root node of the tree.
+    	\begin{itemize}
+    		\item If $n$ is a leaf node (i.e. if $n$ has no children), the final value of
+            $n$ its current value.
+    		\item If $n$ is not a leaf node, the value of $n$ is determined by retrieving
+            the values of its children, from left to right. If one of the children is an
+            operator, it is applied to the other children and the result is the final
+            result of $n$.
+    	\end{itemize}
+	\end{definition}
+
+    The tree we have just created is not unique. In fact, their are multiple valid trees for
+    the expression \code{1 + 2 * 3}. In figure \ref{fig_grammar_parse_tree_right}, we show
+    the parse tree for the \ijargon{rightmost derivation} of our sample expression. This tree
+    differs slightly (but significantly) from our original tree. Apparently out grammar is
+    \ijargon{ambiguous}: it can generate multiple trees for the same expression.
+
+	\diagram{grammar_parse_tree_left.png}{Parse Tree for Leftmost Derivation of \code{1 + 2 * 3}}{fig_grammar_parse_tree_left}
+
+    \begin{table} \label{table_sample_derivation_rightmost}
+		\begin{center}
+			\begin{tabular}{ll}
+				\hline
+			                  	  & \lstinline$_expression_$			 \\
+				$\Longrightarrow$ & \lstinline$expression "+" _expression_$	 \\
+				$\Longrightarrow$ & \lstinline$expression "+" expression "*" _expression_$ \\
+				$\Longrightarrow$ & \lstinline$expression "+" expression "*" _number_$ \\
+				$\Longrightarrow$ & \lstinline$expression "+" _expression_ "*" "3"$ \\
+				$\Longrightarrow$ & \lstinline$expression "+" _number_ "*" "3"$ \\
+				$\Longrightarrow$ & \lstinline$_expression_ "+" "2" "*" "3"$ \\
+				$\Longrightarrow$ & \lstinline$_number_ "+" "2" "*" "3"$ \\
+				$\Longrightarrow$ & \lstinline$"1" "+" "2" "*" "3"$ \\		
+				\hline
+			\end{tabular}    	
+			\caption{Rightmost derivation scheme for \code{1 + 2 * 3}}
+		\end{center}
+	\end{table}
+
+	\diagram{grammar_parse_tree_right.png}{Parse Tree for Rightmost Derivation of \code{1 + 2 * 3}}{fig_grammar_parse_tree_right}
+
+    The existence of multiple trees is not altogether a blessing, since it turns out that
+    different trees produce different expression results.
+
+	\begin{example}{Tree Evaluation}{ex_tree_evaluation}
+		In this example, we will calculate the value of the expression \code{1 + 2 * 3}
+        using the parse tree in figure \ref{fig_grammar_parse_tree_right}. We start with
+        the root node, and query the values of its three \code{expression} child nodes. The
+        value of the left child node is \code{1}, since it has only one child
+		(\code{number}) and its value is \code{1}. The value of the right \code{expression}
+		node is determined recursively by retrieving the values of its two \code{expression}
+        child nodes. These nodes evaluate to \code{2} and \code{3} respectively, and we
+        apply the middle child node, which is the multiplication (\code{*}) operator.
+        This yields the value \code{6} which we store in the \code{expression} node.
+		
+		The values of the left and right child nodes of the root \code{expression} node are
+        now known and we can calculate the final expression value. We do so by retrieving
+        the value of the root node's middle child node (the \code{+} operator) and applying
+        it to the values of the left and right child nodes (\code{1} and \code{6} respectively).
+        The result, \code{7} is stored in the root node. Incidentally, it is also the correct
+        answer.
+
+		At the end of the evaluation, the expression result is known and resides inside the
+        root node.
+	\end{example}
+
+	In this example, we have seen that the value \code{7} is found by evaluating the tree
+    corresponding to the rightmost derivation of the expression \code{1 + 2 * 3}. This is
+    illustrated by the \ijargon{annotated parse tree}\index{annotated syntax tree}, which
+    is shown in figure \ref{fig_grammar_annotated_parse_tree_right}.
+
+	\diagram{grammar_parse_tree_right_annotated.png}
+		    {Annotated Parse Tree for Rightmost Derivation of \code{1 + 2 * 3}}
+            {fig_grammar_annotated_parse_tree_right}
+
+	We can now apply the same technique to calculate the final value of the parse tree
+    corresponding to the leftmost derivation of the expression \code{1 + 2 * 3}, shown in
+    figure \ref{fig_grammar_annotated_parse_tree_left}. We find that the answer (\code{9})
+    is incorrect, which is caused by the order in which the nodes are evaluated.
+
+	\diagram{grammar_parse_tree_left_annotated.png}
+		    {Annotated Parse Tree for Leftmost Derivation of \code{1 + 2 * 3}}
+            {fig_grammar_annotated_parse_tree_left}
+
+    The nodes in a parse tree must reflect the precedence of the operators used in
+    the expression in the parse tree. In case of the tree for the rightmost derivation
+    of \code{1 + 2 * 3}, the precedence was correct: the value of \code{2 * 3} was
+    evaluated before the \code{1} was added to the result. In the parse tree for the
+    leftmost derivation, the value of \code{1 + 2} was calculated before the result
+    was multiplied by \code{3}, yielding an incorrect result. Should we, then, always
+    use rightmost derivations? The answer is no: it is mere coindence that the rightmost
+    derivation happens to yield the correct result -- it is the grammar that is flawed.
+    With a correct grammar, any derivation order will yield the same results and
+    only one parse tree correspons to a given expression.
+
+	\section{Precedence}
+
+	The problem of ambiguity in the grammar of the previous section is solved for a big
+    part by introducing new nonterminals, which will serve as placeholders to introduce
+    operator precedence levels. We know that multiplication (\code{*}) and division (\code{/})
+    bind more strongly than addition (\code{+}) and subtraction(\code{-}), but we need
+    a means to visualize this concept in the parse tree.
+	The solution lies in adding the nonterminal \code{term} (see the new grammar in
+    listing \ref{listing_grammar_exp_disambiguous}, which will deal with multiplications
+    and additions. The original \code{expression} nonterminal is now only used for additions
+    and subtractions. The result is, that whenever a multiplication or division is encountered,
+    the parse tree will contain a \code{term} node in which all multiplications and divisions
+    are resolved until an addition or subtraction arrives.
+
+    \lstset{language=BNF}
+    \lstset{style=BNF}
+    \begin{lstlisting}[float, caption={Unambiguous Expression Language in EBNF}, label=listing_grammar_exp_disambiguous]
+expression:		  term "+" expression
+              	| term "-" expression
+				| term.
+term:			  factor "*" term
+				| factor "/" term
+				| factor "^" term
+				| factor.
+factor:			  "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9".
+				| "(" expression ")".
+    \end{lstlisting}
+
+	We also introduce the nonterminal \code{factor} to replace \code{number}, and to
+    deal with parentheses, which have the highest precedence. It should now become
+    obvious that the lower you get in the grammar, the higher the priority of the
+    operators dealt with. Tables \ref{table_sample_derivation_leftmost_disambiguous}
+    and \ref{table_sample_derivation_rightmost_disambiguous} show the leftmost and
+    rightmost derivation of \code{1 + 2 * 3}. Careful study shows that they are the
+    same. In fact, the corresponding parse trees are exactly identical (shown in
+    figure \ref{fig_grammar_parse_tree_both}). The parse tree is already annotated
+    for convience and yields the correct result for the expression it holds.
+
+    \begin{table} \label{table_sample_derivation_leftmost_disambiguous}
+		\begin{center}
+			\begin{tabular}{ll}
+				\hline
+			                   	  & \lstinline$_expression_$			 \\
+				$\Longrightarrow$ & \lstinline$_term_ "+" expression$	 \\
+				$\Longrightarrow$ & \lstinline$_factor_ "+" expression$ \\
+				$\Longrightarrow$ & \lstinline$"1" "+" _expression_$ \\
+				$\Longrightarrow$ & \lstinline$"1" "+" _term_$ \\
+				$\Longrightarrow$ & \lstinline$"1" "+" _factor_ "*" term$ \\
+				$\Longrightarrow$ & \lstinline$"1" "+" "2" "*" _term_$ \\
+				$\Longrightarrow$ & \lstinline$"1" "+" "2" "*" _factor_$ \\
+				$\Longrightarrow$ & \lstinline$"1" "+" "2" "*" "3"$ \\		
+				\hline
+			\end{tabular}    	
+			\caption{Leftmost derivation scheme for \code{1 + 2 * 3}}
+		\end{center}
+	\end{table}
+
+    \begin{table} \label{table_sample_derivation_rightmost_disambiguous}
+		\begin{center}
+			\begin{tabular}{ll}
+				\hline
+			                   	  & \lstinline$_expression_$			 \\
+				$\Longrightarrow$ & \lstinline$term "+" _expression_$	 \\
+				$\Longrightarrow$ & \lstinline$term "+" _term_$	 \\
+				$\Longrightarrow$ & \lstinline$term "+" factor_"*" _term_$ \\
+				$\Longrightarrow$ & \lstinline$term "+" factor "*" _factor_$ \\
+				$\Longrightarrow$ & \lstinline$term "+" _factor_ "*" "3"$ \\
+				$\Longrightarrow$ & \lstinline$term "+" "2" "*" "3"$ \\
+				$\Longrightarrow$ & \lstinline$_term_ "+" "2" "*" "3"$ \\
+				$\Longrightarrow$ & \lstinline$_factor_ "+" "2" "*" "3"$ \\
+				$\Longrightarrow$ & \lstinline$"1" "+" "2" "*" "3"$ \\		
+				\hline
+			\end{tabular}    	
+			\caption{Rightmost derivation scheme for \code{1 + 2 * 3}}
+		\end{center}
+	\end{table}
+
+	\diagram{grammar_parse_tree_both.png}
+		    {Annotated Parse Tree for Arbitrary Derivation of \code{1 + 2 * 3}}
+            {fig_grammar_parse_tree_both}
+	
+	It should be noted that in some cases, an instance of, for example, \code{term}
+    actually adds an operator (\code{*} or \code{/}) and sometimes it is merely included
+    as a placeholder that holds an instance of \code{factor}. Such nodes have no
+    function in a syntax tree and can be safely left out (which we will do when we
+    generate \ijargonex{abstract syntax trees}{abstract syntax tree}.
+
+	There is an amazing (and amusing) trick that was used in the first FORTRAN
+    compilers to solve the problem of operator precedence. An excerpt from a paper
+    by Donald Knuth (1962):
+
+	\begin{quote}
+		\begin{itshape}
+		An ingenious idea used in the first FORTRAN compiler was to surround binary
+        operators with peculiar-looking parentheses:
+
+		\begin{quote}
+			$+$ and $-$ were replaced by $))) + ((($ and $))) - ((($\\
+			$*$ and $/$ were replaced by $)) * (($ and $)) / $$(($\\
+  			$**$ was replaced by $) ** ($
+		\end{quote}
+
+		and then an extra ``$((($'' at the left and ``$)))$'' at the right
+        were tacked on. For example, if we consider ``$(X + Y) + W / Z$,'' we
+        obtain
+		
+		\[
+			((((X))) + (((Y)))) + (((W))/((Z)))
+		\]
+
+		This is admittedly highly redundant, but extra parentheses need not
+        affect the resulting machine language code.
+		\end{itshape}
+	\end{quote}
+
+	Another approach to solve the precedence problem was invented by the Polish scientist 
+	J. Lukasiewicz in the late 20s. Today frequently called \ijargon{prefix notation},
+    the parenthesis-free or \ijargon{polish notation} was a perfect notation for
+    the output of a compiler, and thus a step towards the actual mechanization and
+    formulation of the compilation process.
+		
+	\begin{example}{Prefix notation}{ex_prefix_notation}
+        \code{1 + 2 * 3} becomes \code{+ 1 * 2 3}\\
+		\code{1 / 2 - 3} becomes \code{- / 1 2 3}
+	\end{example}
+
+	\section{Associativity}
+
+	When we write down the syntax tree for the expression \code{2 - 1 - 1} according
+    to our example grammar, we discover that our grammar is still not correct
+    (see figure \ref{fig_grammar_parse_tree_associativity}). The parse tree yields the
+    result \code{2} while the correct result is \code{0}, even though we have taken
+    care of operator predence. It turns out that apart from precedence, operator
+    \ijargon{associativity} is also important. The subtraction operator \code{-}
+    associates to the left, so that in a (sub) expression which consists only
+    of operators of equal precedence, the order in which the operators must be evaluated
+    is still fixed. In the case of subtraction, the order is from left to right. In the
+    case of \code{\^} (power), the order is from right to left. After all,
+
+	\[
+		2^{{2}^{2}} \ = 512 \ \neq \ 64.
+	\]
+
+	\diagram{grammar_parse_tree_associativity.png}
+		    {Annotated Parse Tree for \code{2 - 1 - 1}}
+            {fig_grammar_parse_tree_associativity}
+
+	It turns out that our grammar works only for right-associative operators (or for
+    non-associative operators like addition or multiplication, since these may be treated
+    like right-associative operators), because its production rules are right-recursive.
+	Consider the following excerpt:
+	
+    \lstset{language=BNF}
+    \lstset{style=BNF}
+    \begin{lstlisting}
+expression:		  term "+" expression
+              	| term "-" expression
+				| term.
+    \end{lstlisting}
+
+	The nonterminal \code{expression} acts as the left-hand side of these three
+    production rules, and in two of them also occurs on the far right. This causes
+    right recursion which can be spotted in the parse tree in figure
+	\ref{fig_grammar_parse_tree_associativity}: the right child node of every
+    \code{expression} node is again an \code{expression} node. Left recursion can be
+    recognized the same way. The solution, then, to the associativity problem is to
+    introduce left-recursion in the grammar. The grammar in listing
+	\ref{listing_associative_grammar} can deal with left-associativity and right-associativity,
+    because \code{expression} is left-recursive, causing \code{+} and \code{-} to be treated
+    as left-associative operators, and \code{term} is right-recursive, causing
+	\code{*}, \code{/} and \code{\^} to be treated as right-associative operators.
+
+    \lstset{language=BNF}
+    \lstset{style=BNF}
+    \begin{lstlisting}[float, caption={Expression Grammar Modified for Associativity}, label=listing_associative_grammar]
+expression:		  expression "+" term
+              	| expression "-" term
+				| term.
+term:			  factor "*" term
+				| factor "/" term
+				| factor "^" term
+				| factor.
+factor:			  "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9".
+				| "(" expression ")".
+    \end{lstlisting}
+
+	And presto--the expressions \code{2 - 1 - 1} and \code{2 \^{} 3 \^{} 2} now have
+    correct parse trees (figures \ref{fig_grammar_associativity_minus} and
+	\ref{fig_grammar_associativity_power}). We will see in the next chapter that
+    we are not quite out of the woods yet, but never fear, the worst is behind us.
+
+	\diagram{grammar_associativity_minus.png}
+		    {Correct Annotated Parse Tree for \code{2 - 1 - 1}}
+            {fig_grammar_associativity_minus}
+
+	\diagram{grammar_associativity_power.png}
+		    {Correct Annotated Parse Tree for \code{2 \^{} 3 \^{} 2}}
+            {fig_grammar_associativity_power}
+
+	
+	
+
+    \section{A Logic Language} \label{sec_logic_lang}
+
+		As a final and bigger example, we present a complete little language
+        that handles propositional logic notation (proposition, implication,
+		conjunction, disjunction and negation). This language has operator precedence
+        and associativity, but very few terminals (and an interpreter can
+		therefore be completely implemented as an exercise. We will do so in the
+        next chapter). Consult the following sample program:
+
+		\begin{example}{Proposition Logic Program}{ex_proposition_logic_program}
+			\lstset{language=Clang}	
+			\lstset{style=Source}		
+			\begin{lstlisting}
+A = 1
+B = 0
+C = (~A) | B
+RESULT = C -> A
+			\end{lstlisting}
+		\end{example}
+
+		The language allows the free declaration of variables, for which capital
+        letters are used (giving a range of 26 variables maximum). In the example,
+        the variable \code{A} is declared and set to \jargon{true} (1), and \code{B}
+        is set to \jargon{false} (0). The variable \code{C} is declared and set to
+        \lstinline$(~A) | B$, which is false (0). Incidentally, the parentheses
+        are not required because \lstinline$~$ has higher priority than
+		\lstinline$|$. Finally, the program is terminated
+        with an instruction that prints the value of \lstinline$C -> B$, which is
+		true (1). Termination of a program with such an instruction is required.
+
+		Since our language is a proposition logic language, we must define truth
+		tables for each operator (see table \ref{table_proposition_logic_operators}).
+		You may already be familiar with all the operators. Pay special attention
+        to the operator precedence relation:
+
+        \begin{table}[htbp]
+        	\begin{center}
+	        	\begin{tabular}{lll}
+	        		\tableheader{Operator} & \tableheader{Priority} & \tableheader{Operation} \\
+	        		\hline
+	        		\verb$~$	&	1	& Negation (not) \\
+	        		\verb$&$	&	2	& Conjunction (and) \\
+	        		\verb$|$	&	2	& Disjunction (or) \\
+					\verb$->$	&	3	& Right Implication \\
+					\verb$<-$	&	3	& Left Implication \\
+					\verb$<->$	&	3	& Double Implication \\
+	        		\hline
+	        	\end{tabular}
+
+				\begin{tabular}{l}
+				\\
+				\end{tabular}
+
+	        	\begin{ttfamily}
+	        		\begin{tabular}{lll}
+	        			\begin{tabular}{c|c|c}
+	        			    A & B & A \& B \\
+	        			    \hline
+	        			    F & F & F \\
+	        			    F & T & F \\
+	        			    T & F & F \\
+	        			    T & T & T \\
+	        			\end{tabular}
+	        		    &
+	        			\begin{tabular}{c|c|c}
+	        			    A & B & A | B \\
+	        			    \hline
+	        			    F & F & F \\
+	        			    F & T & T \\
+	        			    T & F & T \\
+	        			    T & T & T \\
+	        			\end{tabular}
+	        		    &
+	        			\begin{tabular}{c|c}
+	        			    A & \~{}A \\
+	        			    \hline
+	        			    F & T \\
+	        			    T & F \\
+	        			\end{tabular}
+	        		    \\
+		        	\end{tabular}
+
+					\begin{tabular}{l}
+					\\
+					\end{tabular}
+
+	        		\begin{tabular}{lll}
+	        			\begin{tabular}{c|c|c}
+	        			    A & B & A -> B \\
+	        			    \hline
+	        			    F & F & T \\
+	        			    F & T & T \\
+	        			    T & F & F \\
+	        			    T & T & T \\
+	        			\end{tabular}
+	        		    &
+	        			\begin{tabular}{c|c|c}
+	        			    A & B & A <- B \\
+	        			    \hline
+	        			    F & F & T \\
+	        			    F & T & F \\
+	        			    T & F & T \\
+	        			    T & T & T \\
+	        			\end{tabular}
+	        		    &
+	        			\begin{tabular}{c|c|c}
+	        			    A & B & A <-> B \\
+	        			    \hline
+	        			    F & F & T \\
+	        			    F & T & F \\
+	        			    T & F & F \\
+	        			    T & T & T \\
+	        			\end{tabular}
+	        		    \\
+		        	\end{tabular}
+            	\end{ttfamily}
+	        	\caption{Proposition Logic Operations and Their Truth Tables}
+	        	\label{table_proposition_logic_operators}
+	        \end{center}
+        \end{table}
+
+	Now that we are familiar with the language and with the operator precedence
+    relation, we can write a grammar in BNF. Incidentally, all operators are
+    non-associative, and we will treat them as if they associated to the right
+    (which is easiest for parsing by a machine, in the next chapter). The BNF
+    grammar is in listing \ref{listing_logic_bnf}. For good measure, we have also
+    written the grammar in EBNF (listing \ref{listing_logic_ebnf}).
+
+	\lstset{language=BNF}
+	\lstset{style=BNF}
+	\begin{lstlisting}[float, caption={BNF for Logic Language}, label=listing_logic_bnf]
+program: 			statementlist "RESULT" "=" implication.
+statementlist: 		[e].
+statementlist: 		statement statementlist.
+statement: 			identifier "=" implication ";".
+implication: 		conjunction restimplication.
+restimplication: 	[e].
+restimplication: 	"->"  conjunction restimplication.
+restimplication: 	"<-"  conjunction restimplication.
+restimplication: 	"<->" conjunction restimplication.
+conjunction: 		negation restconjunction.
+restconjunction: 	[e].
+restconjunction: 	"&" negation restconjunction.
+restconjunction: 	"|" negation restconjunction.
+negation: 			"~" negation.
+negation: 			factor.
+factor: 			"(" implication ")".
+factor: 			identifier.
+factor: 			"1".
+factor: 			"0".
+identifier:			"A".
+			...
+identifier:			"Z".
+
+	\end{lstlisting}
+
+	\lstset{language=BNF}
+	\lstset{style=BNF}
+	\begin{lstlisting}[float, caption={EBNF for Logic Language}, label=listing_logic_ebnf]
+program: 		{ statement ";" } "RESULT" "=" implication.
+statement: 		identifier "=" implication.
+implication: 	conjunction { ( "->" | "<-" | "<->" ) implication }.
+conjunction: 	negation { ( "&" | "|" ) conjunction }.
+negation: 		{ "~" } factor.
+factor:   		"(" implication ")"
+           		| identifier
+           		| "1"
+           		| "0".
+identifier:     "A" | ... | "Z".
+	\end{lstlisting}
+
+	You may be wondering why we have built our BNF grammar using complex
+    constructions with empty production rules ($\epsilon$) while our
+    running example, the mathematical expression grammar, was so much easier.
+	The reason is that in our expression grammar, multiple individual production
+    rules with the same nonterminal on the left-hand side (e.g. \code{factor}),
+	also start with that nonterminal. It turns out that this property of a grammar
+    makes it difficult to implement in an automatic parser (which we will do
+    in the next chapter). This is why we must go out of our way to create
+    a more complex grammar.
+
+    \section{Common Pitfalls}
+
+		We conclude our chapter on grammar with some practical advice.
+        Grammars are not the solution to everything. They can describe the
+        basic structure of a language, but fail to capture the details. You
+        can easily spend much time trying to formulate grammars that contain
+        the intricate details of some shadowy corner of your language, only
+        to find out that it would have been far easier to handle those details
+        in the semantic analysis phase. Often, you will find that some things
+        just cannot be done with a context free grammar.
+
+		Also, if you try to capture a high level of detail in a grammar,
+        your grammar will grow rapidly grow and become unreadable. Extended
+        Backus-Naur form may cut you some notational slack, but in the end
+        you will be moving towards attribute grammars or affix grammars
+        (discussed in Meijer, \cite{grammar_meijer}).
+
+		Visualizing grammars using syntax diagrams can be a big help, because
+        Backus-Naur form can lure you into recursion without termination. Try to formulate
+        your entire grammar in syntax diagrams before moving to BNF (even
+        though you will have to invest more time). Refer to the syntax diagrams
+        for the \langname{} language in appendix \ref{appendix:syntaxdiagrams}
+        for an extensive example, especially compared to the BNF notation in
+        appendix \ref{appendix:bnf}.
+
+
+	\begin{thebibliography}{99}
+		\bibitem{grammar_aho}A.V. Aho, R. Sethi, J.D. Ullman: \emph{Compilers: Principles, Techniques and Tools}, Addison-Wesley, 1986.
+		\bibitem{grammar_feldbrugge}F.H.J. Feldbrugge: \emph{Dictaat Vertalerbouw},
+			Hogeschool van Arnhem en Nijmegen, edition 1.0, 2002.
+		\bibitem{grammar_correctheid}J.D. Fokker, H. Zantema, S.D. Swierstra:
+			\emph{Programmeren en correctheid}, Academic Service, Schoonhoven, 1991.
+      	\bibitem{grammar_Pascal_Compiler}A. C. Hartmann: \emph{A Concurrent Pascal Compiler for
+      		Minicomputers}, Lecture notes in computer science, Springer-Verlag, Berlin 1977.
+		\bibitem{grammar_lex_yacc}J. Levine: \emph{Lex and Yacc},
+			O'Reilly \& sons, 2000
+       	\bibitem{grammar_meijer}H. Meijer: \emph{Inleiding Vertalerbouw},
+      		University of Nijmegen, Subfaculty of Computer Science, 2002.
+		\bibitem{grammar_pragmatics}M.J. Scott: \emph{Programming Language Pragmatics},
+			Morgan Kaufmann Publishers, 2000.
+		\bibitem{grammar_languages}T. H. Sudkamp: \emph{Languages \& Machines},  
+			Addison-Wesley, 2nd edition, 1998.
+		\bibitem{grammar_wirth}N. Wirth: \emph{Compilerbouw}, Academic Service, 1987.
+        \bibitem{grammar_PascalUserManual}N. Wirth and K. Jensen: \emph{PASCAL User Manual and Report},
+            Lecture notes in computer science, Springer-Verlag, Berlin 1975.
+	\end{thebibliography}
+    
+    

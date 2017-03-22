@@ -1,0 +1,162 @@
+% requirements.tex
+% Practical Compiler Construction
+% Chapter: Requirements
+% This chapter discusses the requirements for compiling and running the compiler.
+
+\chapter{Requirements}
+    
+    \section{Introduction}
+    
+    	This chapter specifies the software necessary to either use (run) \langname{} or
+    	to develop for \langname{}. The version numbers supplied in this text are the version numbers
+    	of software packages we used. You may well be able to use older versions of this software,
+    	but it is not guaranteed that this will work. You can always (except in rare cases) use
+    	newer versions of the software discussed below.
+    	
+    \section{Running \langname{}}
+    
+    	\langname{} was designed for the Linux operating system. It is perfectly possible to run
+    	\langname{} on other platforms like Windows, and even do development work for \langname{} on non-Linux
+    	platforms. However, this section discusses the software required to run \langname{} on Linux.
+    	
+    	% Linux
+    	The Linux distribution we used is 
+    	\mbox{RedHat,}\footnote{RedHat Linux 7.2, http://www.redhat.com/apps/download/}
+    	but other advanced Linux distributions like 
+    	\mbox{SuSE}\footnote{SuSE Linux 8.0, http://www.suse.com/us/private/download/index.html}
+    	or 
+    	\mbox{Mandrake}\footnote{Mandrake Linux 8.0, http://www.mandrake.com} will do fine. 
+    	 
+    	% inger
+    	The most elementary package you need to run \langname{} is naturally \langname{}
+    	itself. It can be downloaded from its repository at 
+    	\mbox{Source Forge.}\footnote{Inger 0.x, http://www.sourceforge.net/projects/inger}
+    	There are two packages available: the user package, which contains only the compiler 
+    	binary and the user manual, and the development package, which contains the compiler 
+    	source as well. Be sure to download the user version, not the developer version.
+    	
+    	% binutils
+    	As the \langname{} compiler compiles to \mbox{GNU AT\&T} assembly code, the GNU assembler 
+    	\code{as} is required to convert the assembly code to object code. The GNU assembler is part
+    	of the \mbox{\code{binutils}}
+    	\mbox{package.}\footnote{Binutils 2.11.90.0.8, http://www.gnu.org/directory/GNU/binutils.html}
+    	You may use any other
+    	assembler, provided it supports the \mbox{AT\&T} assembly syntax; \code{as} is the only
+    	assembler that supports it that we are currently aware of. A linker is also required ---
+    	we use the GNU linker (which is also part of the \mbox{\code{binutils}} package).
+    	
+    	% perl
+    	Some of the code for \langname{} is generated using scripts written in the Perl scripting
+    	language. You will need the \mbox{\code{perl}}\footnote{Perl 6, http://www.perl.com}
+    	interpreter to execute these scripts.
+    	
+    	% DJGPP
+    	If you use a Windows port of \langname{}, you can also use the GNU ports of
+    	\code{as} and \code{ld} that come with 
+    	\mbox{DJGPP.}\footnote{DJGPP 2.03, http://www.delorie.com or http://www.simtel.net/pub/djgpp}
+    	DJGPP is a free port of (most of) the GNU tools.
+    	
+    	% Acrobat
+    	It can be advantageous to be able to view this documentation in digital form (as a Portable
+    	Document File), which is possible with the Acrobat 
+    	\mbox{Reader.}\footnote{Adobe Acrobat 5.0, http://www.adobe.com/products/acrobat/readstep.html}
+    	The \langname{} website may also offer this documentation in other forms, such as HTML.
+    	
+		Editing \langname{} source code in Linux can be done with the free editor \mbox{\code{vi},} which is
+		included with virtually all Linux distributions. You can use any editor you want, though. 
+		An \langname{} syntax highlighting template for Ultra Edit is available from the \langname{}
+		archive at Source Forge.
+		
+		If a Windows binary of the \langname{} compiler is not available or not usable, and you need
+		to run \langname{} on a Windows platform, you may be able to use the Linux emulator for the
+        Windows platform, 
+        \mbox{\code{Cygwin},}\footnote{Cygwin 1.11.1p1, http://www.cygwin.com}
+        to execute the Linux binary.
+		
+	\section{\langname{} Development}
+	
+		For development of the \langname{} language, rather than development \emph{with} the \langname{}
+		language, some additional software packages are required. For development purposes we strongly
+		recommend that you work on a Linux platform, since we cannot guarantee that all development tools
+		are available on Windows platforms or work the same way as they do on Linux.
+		
+		% Automake, Autoconf
+		The \langname{} binary is built from source using 
+		\mbox{automake}\footnote{Automake 1.4-p5, http://www.gnu.org/software/automake} and 
+		\mbox{autoconf}\footnote{Autoconf 2.13, http://www.gnu.org/software/autoconf/autoconf.html}, 
+		both of which are free GNU software. These packages allow the developer to generate 
+		makefiles that target the user platform, i.e. use available C compiler and lexical 
+		scanner generator versions, and warn if no suitable software is available. To 
+		execute the generated makefiles, GNU \mbox{\code{make}}, which is part of the \mbox{\code{binutils}} 
+		package, is also required. Most Linux installations should have this software already 
+		installed.
+		
+		% GCC
+		C sources are compiled using the GNU Compiler Collection \mbox{(\code{gcc}).}
+		\footnote{GCC 2.96, http://www.gnu.org/software/gcc/gcc.html} We used the 
+		lexical analyzer generator GNU \code{flex}
+		\footnote{Flex 2.5.4, http://www.gnu.org/software/flex} to generate a lexical scanner.
+    	
+    	% CVS
+    	All \langname{} code is stored in a Concurrent Versioning System repository on a server 
+    	at Source Forge, which may be accessed using the \code{cvs} package.
+    	\footnote{\code{CVS 1.11.1p1}, http://www.cvshome.org} Note that you must be registered as 
+    	an \langname{} developer to be able to change the contents of the CVS repository. 
+    	Registration can be done through Source Forge.
+    	
+    	% LaTeX, MikTeX
+    	All documentation was written using the \LaTeXe{} typesetting package, 
+    	\footnote{\LaTeXe{}, http://www.latex-project.org} which is also available for Windows
+    	as the \mbox{Mik\TeX{}}\footnote{Mik\TeX{} 2.2, http://www.miktex.org} system. Editors that come in
+    	handy when working with \TeX{} sources are Ultra Edit,
+    	\footnote{Ultra Edit 9.20, http://www.ultraedit.com} which
+    	supports \TeX{} syntax highlighting, and \mbox{TexnicCenter}
+    	\footnote{TexnicCenter, http://www.toolscenter.org/products/texniccenter} which is a 
+    	full-fledged \TeX{} editor with many options (although no direct visual feedback --- 
+    	it is a \emph{what you see is what you mean} \mbox{(WYSIWYM)} tool).
+    	
+    	% KDevelop
+    	The \langname{} development package comes with a project definition file for \mbox{KDevelop,}
+   		an open source clone of Microsoft Visual Studio. If you have a Linux distribution that
+   		has the X window system with KDE (K Desktop Environment) installed, then you can do development 
+   		work for \langname{} in a graphical environment.
+   		
+   		
+   		
+   	\section{Required Development Skills}
+		   	
+		Development on \langname{} requires the following skills:
+		
+		\begin{itemize}
+			\item[-]	A working knowledge of the C programming language;
+			\item[-]	A basic knowlege of the Perl scripting language;
+			\item[-]	Experience with GNU assembler (specifically, the \mbox{AT\&T} assembly syntax).
+		\end{itemize}		   		
+		
+		The rest of the skills needed, including working with the lexical analyzer 
+		generator \code{flex} and writing tree data structures can be acquired from this book. 
+		Use the bibliography at the end of this chapter to find additional literature that will
+		help you master all the tools discussed in the preceding sections.
+		
+	
+	% This bibliography should include some C and gcc books.
+	\begin{thebibliography}{99}
+		\bibitem{req_cvs}M. Bar: \emph{Open Source Development with CVS}, Coriolis Group, $2^{nd}$ edition, 2001 
+		\bibitem{req_gnu_as}D. Elsner: \emph{Using As: The Gnu Assembler}, iUniverse.com, 2001
+		\bibitem{req_latex_companion}M. Goossens: \emph{The Latex Companion}, Addison-Wesley Publishing, 1993
+		\bibitem{req_gcc_reference}A. Griffith: \emph{GCC: the Complete Reference}, McGraw-Hill Osborne Media, $1^{st}$ edition, 2002		
+		\bibitem{req_dev_linux}E. Harlow: \emph{Developing Linux Applications}, New Riders Publishing, 1999.
+		\bibitem{req_lex_yacc}J. Levine: \emph{Lex \& Yacc}, O'Reilly \& Associates, 1992
+		\bibitem{req_gnu_programming}M. Kosta Loukides: \emph{Programming with GNU Software}, O'Reilly \& Associates, 1996
+		\bibitem{req_linuxbible}C. Negus: \emph{Red Hat Linux 8 Bible}, John Wiley \& Sons, 2002
+		\bibitem{short_latex}Oetiker, T.: \emph{The Not So Short Introduction to \LaTeXe{}}, version 3.16, 2000
+		\bibitem{req_make}A. Oram: \emph{Managing Projects with Make}, O'Reilly \& Associates, $2^{nd}$ edition, 1991
+		\bibitem{req_cvs_reference}G. Purdy: \emph{CVS Pocket Reference}, O'Reilly \& Associates, 2000
+		\bibitem{req_debug_with_gdb}R. Stallman: \emph{Debugging with GDB: The GNU Source-Level Debugger}, Free Software Foundation, 2002
+		\bibitem{req_autoconf}G.V. Vaughan: \emph{GNU Autoconf, Automake, and Libtool}, New Riders Publishing, $1^{st}$ edition, 2000 
+		\bibitem{req_perl}L. Wall: \emph{Programming Perl}, O'Reilly \& Associates, $3^rd$ edition, 2000
+		\bibitem{req_running_linux}M. Welsch: \emph{Running Linux}, O'Reilly \& Associates, $3^rd$ edition, 1999
+	\end{thebibliography}
+	
+	
+	

@@ -1,0 +1,29 @@
+Code generation is the final step in building a compiler. After the semantic 
+analysis there should be no more errors in the source code. If there are 
+still errors then the code generation will almost certainly fail.
+
+This part of the book contains descriptions of how the assembly output will be 
+generated from the \langname{} source code. The subjects covered in this part 
+include implementation (assembly code) of every operator supported by 
+\langname{}, storage of data types, calculation of array offsets and function
+calls, with regard to stack frames and return values.
+
+In the next chapter, code generation is explained at an abstract level. In the
+final chapter of this book, \jargon{code templates}, we present assembly
+code templates for each operation in \langname{}.  Using templates, we
+can guarantee that operations can be chained together in any order desired
+by the programmer, including orders we did not expect.
+
+
+
+
+
+  
+
+        
+        
+        
+        
+ 
+	    
+               

@@ -1,0 +1,77 @@
+\chapter{Summary of Operations} \label{appendix:operations}
+
+\section{Operator Precedence Table}
+
+	\begin{table}[hbtp]
+		\begin{tabular}{llll}
+			\tableheader{Operator} & \tableheader{Priority}	& \tableheader{Associatity} & \tableheader{Description}\\
+			\hline
+			\verb|()|	&	1	& L & function application\\
+			\verb|[]|	&   1	& L & array indexing\\
+			\verb|!|	& 	2	& R & logical negation\\
+			\verb|-|	&   2	& R & unary minus\\
+			\verb|+|	&	2	& R & unary plus\\
+			\verb|~|	&	3	& R	& bitwise complement\\
+			\verb|*|	&	3	& R & indirection\\
+			\verb|&|	&	3	& R & referencing\\
+			\verb|*|	& 	4	& L	& multiplication\\
+			\verb|/|	&	4	& L	& division\\
+			\verb|%|	&	4	& L	& modulus\\
+			\verb|+|	&	5	& L & addition\\
+			\verb|-|	&	5	& L & subtraction\\
+			\verb|>>|	&	6	& L & bitwise shift right\\
+			\verb|<<|	&	6	& L & bitwise shift left\\
+			\verb|<|	&	7	& L & less than\\
+			\verb|<=|	&	7	& L & less than or equal\\
+			\verb|>|	&	7	& L & greater than\\
+			\verb|>=|	&	7	& L & greater than or equal\\
+			\verb|==|	&	8	& L & equality\\
+			\verb|!=|	&	8	& L & inequality\\
+			\verb|&|	&	9	& L & bitwise and\\
+			\verb|^|	&	10	& L & bitwise xor\\
+			\verb+|+	&	11  & L & bitwise or\\
+			\verb|&&|	& 	12	& L & logical and\\
+			\verb+||+	& 	12	& L & logical or\\
+			\verb|?:|	&	13	& R & ternary if\\
+			\verb|=|	&	14	& R	& assignment\\
+			\hline
+		\end{tabular}		
+	\end{table}
+	
+\section{Operand and Result Types}
+
+	\begin{table}[hbtp]
+		\begin{tabular}{llll}
+			\tableheader{Operator} & \tableheader{Operation} & \tableheader{Operands} & \tableheader{Result}\\
+			\hline
+			\verb|()|	& function application 		& any 		 	& any\\
+			\verb|[]|	& array indexing			& \code{int} 	& none\\
+			\verb|!|	& logical negation			& \code{bool} 	& \code{bool}\\	
+			\verb|-|	& unary minus				& \code{int}    & \code{int}\\
+			\verb|+|	& unary plus				& \code{int}    & \code{int}	\\
+			\verb|~|	& bitwise complement		& \code{int}, \code{char}    & \code{int}, \code{char} \\
+			\verb|*|	& indirection				& any & any pointer \\
+			\verb|&|	& referencing				& any pointer & any\\
+			\verb|*|	& multiplication			& \code{int}, \code{float} & \code{int}, \code{float}\\
+			\verb|/|	& division					& \code{int}, \code{float} & \code{int}, \code{float}\\
+			\verb|%|	& modulus					& \code{int}, \code{char} & \code{int}, \code{char}\\
+			\verb|+|	& addition					& \code{int}, \code{float}, \code{char} & \code{int}, \code{float}, \code{char}\\
+			\verb|-|	& subtraction				& \code{int}, \code{float}, \code{char} & \code{int}, \code{float}, \code{char}\\
+			\verb|>>|	& bitwise shift right       & \code{int}, \code{char} & \code{int}, \code{char}\\
+			\verb|<<|	& bitwise shift left        & \code{int}, \code{char} & \code{int}, \code{char}\\
+			\verb|<|	& less than                 & \code{int}, \code{float}, \code{char} & \code{int}, \code{float}, \code{char}\\
+			\verb|<=|	& less than or equal        & \code{int}, \code{float}, \code{char} & \code{int}, \code{float}, \code{char}\\
+			\verb|>|	& greater than              & \code{int}, \code{float}, \code{char} & \code{int}, \code{float}, \code{char}\\
+			\verb|>=|	& greater than or equal     & \code{int}, \code{float}, \code{char} & \code{int}, \code{float}, \code{char}\\
+			\verb|==|	& equality                  & \code{int}, \code{float}, \code{char} & \code{int}, \code{float}, \code{char}\\
+			\verb|!=|	& inequality                & \code{int}, \code{float}, \code{char} & \code{int}, \code{float}, \code{char}\\
+			\verb|&|	& bitwise and               & \code{int}, \code{char} & \code{int}, \code{char}\\
+			\verb|^|	& bitwise xor               & \code{int}, \code{char} & \code{int}, \code{char}\\
+			\verb+|+	& bitwise or                & \code{int}, \code{char} & \code{int}, \code{char}\\
+			\verb|&&|	& logical and               & \code{bool} & \code{bool}\\
+			\verb+||+	& logical or                & \code{bool} & \code{bool}\\
+			\verb|?:|	& ternary if 				& \code{bool} & (2x) any\\
+			\verb|=|	& assignment                & any & any\\
+			\hline
+		\end{tabular}		
+	\end{table}

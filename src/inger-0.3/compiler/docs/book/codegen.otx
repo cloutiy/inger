@@ -1,0 +1,426 @@
+% codegen.otx
+% Practical Compiler Construction
+% Chapter: Code Generation
+
+
+\chapter{Code Generation}
+
+	\map{map4codegen.png}
+
+	\section{Introduction}
+	
+		Code generation is the least discussed and therefore the most mystical aspect
+		of compiler construction in the literature. It is also not extremely difficult,
+		but requires great attention to detail.  The approach using in the \langname{}
+		compiler is to write a \ijargon{template} for each operation. For instance, there is a template
+		for addition (the code{+} operation), a template for multiplication, dereferencing,
+		function calls and array indexing. All of these templates may be chained together
+		in any order. We can assume that the order is valid, since if the compiler gets
+		to code generation, the input code has passed the syntax analysis and semantic
+		analysis phases. Let's take a look at a small example of using templates.
+		
+	    \lstset{language=Inger}
+	    \lstset{style=Source}
+	    \begin{lstlisting}
+int a = *(b + 0x20);
+	    \end{lstlisting}
+	    
+	    Generating code for this line of \langname{} code involves the use of four templates. 
+	    The order of the templates required is determined by the order in which the expression
+	    is evaluated, i.e. the order in which the tree nodes in the abstract syntax tree are 
+	    linked together. By traversing the tree post-order, the first template applied
+	    is the template for addition, since the result of \lstinline$b + 0x20$ must be known
+	    before anything else can be evaluated. This leads to the following ordering of
+	    templates:
+	    	    
+	    \begin{enumerate}
+	    	\item Addition: calculate the result of \lstinline$b + 0x20$
+	    	\item Dereferencing: find the memory location that the number between braces points to.
+	    	This number was, of course, calculated by the previous (inner) template.
+	    	\item Declaration: the variable \code{a} is declared as an integer, either on the stack
+	    	(if it is a local variable) or on the heap (if it is a global variable).
+	    	\item Assignment: the value delivered by the dereferencing template is stored in the
+	    	location returned by the declaration template.
+	    \end{enumerate}
+	    
+	    If the templates are written carefully enough (and tested well enough), we can create
+	    a compiler that suppports and ordering of templates. The question, then, is how templates
+	    can be linked together. The answer lies in assigning one register (in casu, \code{eax}), as
+	    the result register. Every template stores its result in \code{eax}, whether it is a 
+	    value or a pointer. The meaning of the value stored in \code{eax} is determined by the
+	    template that stored the value.
+
+	\section{Boilerplate Code}
+	
+		Since the \langname{} compiler generates assembly code, it is necessary to wrap
+		up this code in a format that the assembler expects. We use the GNU AT\&T assembler, 
+	    which uses the AT\&T assembly language syntax (a syntax very similar to Intel assembly,
+	    but with some peculiar quirks. Take a look at the following assembly instruction,
+	    first in Intel assembly syntax:
+	    
+	    \lstset{language=gasm}
+	    \lstset{style=Source}
+	    \begin{lstlisting}
+MOV EAX, EBX
+	    \end{lstlisting}
+
+		This instruction copies the value stored in the EBX register into the EAX register. 
+		In GNU AT\&T syntax:
+	    
+	    \begin{lstlisting}
+movl %ebx, %eax
+	    \end{lstlisting}
+	    
+	    We note several differences:
+	    
+	    \begin{enumerate}
+	    	\item Register names are written lowercase, and prefixed with a percent (\code{\%}) sign to indicate
+	    	that they are registers, not global variable names;
+	    	\item The order of the operands is reversed. This is a most irritating property of the AT\&T assembly
+	    	language syntax which is a major source of errors. You have been warned.
+	    	\item The instruction mnemonic \code{mov} is prefixed with the size of its operands (4 bytes, long).
+	    	This is similar to Intel's \code{BYTE PTR}, \code{WORD PTR} and \code{DWORD PTR} keywords.
+	    \end{enumerate}
+	    
+	    There are other differences, some more subtle than others, regarding dereferencing and indexing. For 
+	    complete details, please refer to the \jargon{GNU As Manual}\cite{codegen_gnuas}. 
+	    
+	    The GNU Assembler specifies a defailt syntax for the assembly files, at file level. Every file has
+	    at least one data segment (designated with \code{.data}), and one code segment (designated with
+	    \code{.text}). The data segment contains global variables and string constants, while the code
+	    segment holds the actual code. The code segment may never be written to, while the data segment
+	    is modifiable.  Global variables are declared by specifying their size, and optionally a type
+	    and alignment. Global variables are always of type \code{@object} (as opposed to type \code{@function}
+	    for functions). The code in listing \ref{codegen_globvar_decl} declares the variable \code{a}.
+	    
+	    \lstset{language=gasm}
+	    \lstset{style=Source}
+	    \begin{lstlisting}[float,caption={Global Variable Declaration},label=codegen_globvar_decl]
+.data
+.globl a
+	.align 4
+	.type	a,@object
+	.size	a,4
+a:
+	.long	0
+	    \end{lstlisting}
+	    
+	    It is also required to declare at least one function (the main function) as a global
+	    label. This function is used as the program entry point. Its type is always
+	    \code{@function}.
+	    
+
+    \section{Globals}
+
+        The assembly code for an \langname{} program is generated by traversing the tree multiple  
+        times.  The first pass is necessary to find all global declarations.  As the 
+        tree is traversed, the code generation module checks for declaration 
+        nodes.  When it finds a declaration node,
+        the symbol that belongs to the declaration is retrieved from the
+        symbol table.  If this symbol is a global, the type information is
+        retrieved and the assembly code to declare this global variable
+        is generated (see listing \ref{codegen_globvar_decl}).  Local variables and function parameters are skipped 
+        during this pass.  
+
+
+    \section{Resource Calculation}
+
+        During the second pass when the real code is generated, the implementations
+        for functions are also created.  Before the code of a function can be
+        generated, the code generation module must know the location of all
+        function parameters and local variables on the stack.  This is done by
+        quickly scanning the body of the function for local declarations.  Whenever
+        a declaration is found its position on the stack is determined and this
+        is stored in the symbol itself, in the symbol table.  This way references to local variables and
+        parameters can easily be converted to stack locations when generating 
+        code for the function implementation. The size and location of each symbol
+        play an important role in creating the layout for function stack frames, later on.
+                 
+         
+    \section{Intermediate Results of Expressions}
+
+        The code generation module in \langname{} is implemented in a very simple and 
+        straightforward way.  There is no real register allocation involved, all 
+        intermediate values and results of expressions are stored in the EAX register.  
+        Even though this will lead to extremely unoptimized code -- both in speed and size -- 
+        it is also very easy to write.  Consider the following simple program:
+
+		\lstset{language=Inger}
+		\lstset{style=Source}
+		\begin{lstlisting}
+/*
+* simple.i
+* Simple example program to demonstrate code generation.
+*/
+module simple;
+
+extern printInt : int i -> void;
+
+int a, b;
+
+start main : void -> void
+{
+    a = 16;
+    b = 32;
+    printInt( a * b );
+}
+		\end{lstlisting}
+
+         This little program translates to the following x86 assembly code wich
+        shows how the intermediate values and results of expressions are kept
+        in the EAX register:
+
+		\lstset{language=gasm}
+		\lstset{style=Source}
+		\begin{lstlisting}
+.data
+.globl a
+	.align 4
+	.type	a,@object
+	.size	a,4
+a:
+	.long	0
+.globl b
+	.align 4
+	.type	b,@object
+	.size	b,4
+b:
+	.long	0
+.text
+	.align 4
+.globl main
+	.type	main,@function
+main:
+	pushl	%ebp
+	movl	%esp, %ebp
+	subl	$0, %esp
+	movl	$16, %eax
+	movl	%eax, a
+	movl	$32, %eax
+	movl	%eax, b
+	movl	a, %eax
+	movl	%eax, %ebx
+	movl	b, %eax
+	imul	%ebx
+	pushl	%eax
+	call	printInt
+	addl	$4, %esp
+	leave
+	ret
+		\end{lstlisting}
+
+		The \code{eax} register may contain either values or references, depending on the
+		code template that placed a value in \code{eax}. If the code template was,
+		for instance, \code{addition}, \code{eax} will contain a numeric value (either
+		floating point or integer). If the code template was the template for the
+		address operator (\code{\&}), then \code{eax} will contain an address (a pointer).
+		
+		Since the code generation module can assume that the input code is both
+		syntactically and semantically correct, the meaning of the value in \code{eax}
+		does not really matter. All the code generation module needs to to is make
+		sure that the value in \code{eax} is passed between templates correctly,
+		and if possible, efficiently. 
+
+    \section{Function calls}
+    
+    	Function calls are executed using the Intel assembly \code{call} statement. Since
+    	the GNU assembler is reasonable high-level assembler, it is sufficient to supply
+    	the \jargon{name} of the function being called; the linker (\code{ld}) will take
+    	care of the job of filling in the correct address, assuming the function exists,
+    	but once again -- we can assume that the input \langname{} code is semantically
+    	and syntactically correct. If a function really does not exist, and the linker
+    	complains about it, it is because there is an error in a header file. The syntax
+    	of a basic function call is:
+    	
+		\lstset{language=gasm}
+		\lstset{style=Source}
+		\begin{lstlisting}
+call printInt
+    	\end{lstlisting}
+    	
+    	Of course, most interesting functions take parameters. Parameters to functions are
+    	always passed to the function using the stack. For this, \langname{} using the same
+    	paradigm that the C language uses: the caller is responsible for both placing
+    	parameters on the stack and for removing them after the function call has completed.
+    	The reason that \langname{} is so compatible with C is a practical one: this way
+    	\langname{} can call C functions in operating system libraries, and we do not need
+    	to supply wrapper libraries that call these functions. This makes the life of
+    	\langname{} programmers and compiler writers a little bit easier.
+    	
+    	Apart from parameters, functions also have local variables and these live on
+    	the stack too. All in all the stack is rapidly becoming complex and we call
+    	the order in which parameters and local variables are placed on the stack
+    	the \ijargon{stack frame}. As stated earlier, \langname{} adheres to the 
+    	\ijargon{calling convention} popularized by the C programming language, and
+    	therefore the stack frames of the two languages are identifical.
+    	
+        The function being called uses the ESP register to point to the top of the stack.  
+        The EBP register is the base pointer to the stack frame.  As in C, parameters are pushed on the stack from 
+        right to left (the last argument is pushed first).  Return values of 4 bytes or 
+        less are stored in the EAX register.  For return values with more than 4 bytes, 
+        the caller passes an extra first argument to the \ijargon{callee} (the function being called).  This extra argument is 
+        the address of the location where the return value must be stored (this extra argument 
+        is the first argument, so it is the last argument to be pushed on the stack). To illustrate
+        this point, we give an example in C:
+        
+        \begin{example}{Stack Frame}{exstackframe}
+			\lstset{language=CLang}
+			\lstset{style=Source}
+			\begin{lstlisting}
+/* vec3 is a structure of 
+ * 3 floats (12 bytes). */
+struct vec3 
+{
+    int x, y, z;
+};
+
+/* f is a function that returns 
+ * a vec3 struct: */
+vec3 f( int a, int b, int c );
+	        \end{lstlisting}
+	
+	        Since the return value of the function \code{f} is more than 4 bytes, 
+	        an extra first argument must be placed on the stack, containing the address 
+	        of the \code{vec3} structure that the function returns.  This means the call:
+	
+			\lstset{language=CLang}
+			\lstset{style=Source}
+			\begin{lstlisting}
+v = f( 1, 0, 3 );
+			\end{lstlisting}
+	
+	        is transformed into:
+	
+			\lstset{language=CLang}
+			\lstset{style=Source}
+			\begin{lstlisting}
+f( &v, 1, 0, 3 );
+			\end{lstlisting}        
+		\end{example}
+		
+		It should be noted that \langname{} does not support structures at this time, and all
+		data types can be handled using either return values of 4 bytes or less, which fit in 
+		\code{eax}, or using pointers (which are also 4 bytes and therefore fit in \code{eax}).
+		For future extensions of \langname{}, we have decided to support the extra return
+		value function argument.
+		
+		Since functions have a stack frame of their own, the contents of the stack frame
+		occupied by the caller are quite safe. However, the registers used by the caller
+		will be overwritten by the callee, so the caller must take care to push any values
+		it needs later onto the stack.
+        If the caller wants to save the \code{eax}, \code{ecx} and \code{edx} registers, 
+        it has to push them on the stack first.  After that, it pushes the arguments (from right
+        to left),  and when the call instruction is called, the \code{eip} register 
+        is pushed onto the stack too (implicitly, by the \code{call} instruction),
+        which means the return address is on top of the stack.
+        
+        Although the caller does most of the work creating the stack frame (pushing parameters
+        on the stack), the callee still has to do several things. The stack frame is not yet
+        finished, because the callee must create space for local variables (and set them
+        to their initial values, if any). Furthermore, the callee must set save the contents
+        of \code{ebx}, \code{esi} and \code{edi} as needed and set \code{esp} and \code{ebp}
+        to point to the top and bottom of the stack, respectively. Initially, the EBP register 
+        points to a location in the caller's stack 
+        frame.  This value must be preserved, so it must be pushed onto the stack.  
+        The contents of \code{esp} (the bottom of the current stack frame) are then copied 
+        into \code{esp}, so that \code{esp} is free to do 
+        other things and to allow arguments to be referenced as an offset from \code{ebp}.  
+        This gives us the stack frame depicted in figure \ref{fig_stackframe_no_locals}.
+
+        \diagram{codegen_stackframe1.png}{Stack Frame Without Local Variables}{fig_stackframe_no_locals}
+
+        To allocate space for local variables and temporary storage, the callee just 
+        subtracts the number of bytes required for the allocation from \code{esp}.  
+        Finally, it pushes \code{ebx}, \code{esi} and \code{edi} on the stack, if the 
+        function overwrites them. Of course, this depends on the templates used in the
+        function, so for every template, its effects on \code{ebx}, \code{esi} and
+        \code{edi} must be known.
+
+        The stack frame now has the form shown in figure \ref{fig_stackframe_locals}.
+ 
+        \diagram{codegen_stackframe2.png}{Stack Frame With Local Variables}{fig_stackframe_locals}
+ 
+        During the execution of the function, the stack pointer \code{esp} might go up and 
+        down, but the \code{ebp} register is fixed, so the function can always refer to 
+        the first argument as \code{[ebp+8]}. The second argument is located at 
+        \code{[ebp+12]} (decimal offset), the third argument is at \code{[ebp+16]} and so on, assuming
+        all argument are 4 bytes in size.
+        
+        The callee is not done yet, because when execution of the function body is complete, it
+        must perform some cleanup operations. Of course, the caller is responsible for cleaning
+        up function parameters it pushed onto the stack (just like in C), but the remainer of the
+        cleanup is the callee's job. The callee must:
+        
+        \begin{itemize}
+        	\item Store the return value in \code{eax}, or in the extra parameter;
+        	\item Restore the \code{ebx}, \code{esi} and \code{edi} registers as needed.
+        \end{itemize}
+        
+        Restoration of the values of the \code{ebx}, \code{esi} and \code{edi} registers is
+        performed by popping them from the stack, where they had been stored for safekeeping
+        earlier. Of course, it is important to only pop the registers that were pushed onto
+        the stack in the first place: some functions save \code{ebx}, \code{esi} 
+        and \code{edi}, while others do not.
+
+        The last thing to do is taking down the stack frame. This is done by moving 
+        the contents from \code{ebp} to \code{esp} (thus effectively discarding the stack frame)
+        and popping the original \code{ebp} from the stack.\footnote{The i386 instruction set has 
+        an instruction \code{leave} which does this exact thing.} 
+        The return (\code{ret}) instruction can now be executed, wich pops the return address 
+        of the stack and places it in the \code{eip} register.
+
+        Since the stack is now exactly the same as it was before making the function 
+        call, the arguments (and return value when larger than 4 bytes) are still 
+        on the stack.  The \code{esp} can be restored by adding the number of bytes the 
+        arguments use to \code{esp}.
+
+        Finally, if there were any saved registers (\code{eax}, \code{ecx} and \code{edx}) they must 
+        be popped from the stack as well.
+
+
+    \section{Control Flow Structures}
+
+        The code generation module handles if/then/else structures by generating
+        comparison code and conditional jumps.  The jumps go to the labels that are 
+        generated before the then and else blocks.
+        
+        Loops are also implemented in a very straight forward manner.  First it generates
+        a label to jump back to every iteration.  After that the comparison code is
+        generated.  This is done in exactly the same way as it is done with if
+        expressions. After this the code block of the loop is generated followed by
+        a jump to the label right before the comparison code.  The loop is concluded
+        with a final label where the comparison code can jump to if the result of
+        the expression is false.
+
+    
+    \section{Conclusion}
+
+		This concludes the description of the inner workings of the code generation
+        module for the \langname{} language.
+
+        \begin{thebibliography}{99}
+            \bibitem{codegen_Make}O. Andrew and S. Talbott: \emph{Managing projects with Make},
+                O’Reilly \& associates, inc., December 1991.
+            \bibitem{codegen_Asm_Lang_Prog}B. Brey: \emph{8086/8088, 80286, 80386, and 80486
+                Assembly Language Programming}, Macmillan Publishing Company, 1994.
+            \bibitem{codegen_DOS_Internals}G. Chapell: \emph{DOS Internals}, Addison-Wesley, 1994.
+            \bibitem{codegen_Asm_Lang_Step}J. Duntemann: \emph{Assembly Language Step-by-Step},
+                John Wiley \& Sons, Inc., 1992.
+            \bibitem{codegen_Prog_PC_Source}T. Hogan: \emph{The Programmer’s PC Sourcebook:
+                Charts and Tables for the IBM PC Compatibles, and the MS-DOS Operating System,
+                including the new IBM Personal System/2 computers}, Microsoft Press, Redmond,
+                Washington, 1988.
+            \bibitem{codegen_Asm_Lang_Intel}K. Irvine: \emph{Assembly Language for Intel-based
+                Computers}, Prentice-Hall, Upper Saddle River, NJ, 1999.
+            \bibitem{codegen_Prog_Lang_Prag}M. L. Scott: \emph{Porgramming Language Pragmatics},
+                Morgan Kaufmann Publishers, 2000.
+            \bibitem{codegen_Software_Eng}I. Sommerville: \emph{Software Engineering (sixth edition)},
+                Addison-Wesley, 2001.
+            \bibitem{codegen_Operating_Systems}W. Stallings: \emph{Operating Systems: 
+                achtergronden, werking en ontwerp}, Academic Service, Schoonhoven, 1999.
+            \bibitem{codegen_gnuas}R. Stallman: \emph{GNU As Manual},\\
+                \code{http://www.cs.utah.edu/dept/old/texinfo/as/as.html}
+        \end{thebibliography}
+        
+
+

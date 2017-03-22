@@ -1,0 +1,304 @@
+% history.otx
+% Practical Compiler Construction
+% Chapter: Compiler History
+
+
+\chapter{Compiler History}
+
+	This chapter gives an overview of compiler history. Programming languages
+	can roughly be divided into three classes: \ijargon{procedural}
+	or  \jargon{imperative} programming languages, 
+	\jargon{functional} programming languages and \jargon{object-oriented}
+	programming languages. Compilers exist for all three classes and each
+	type have their own quirks and specialties.
+	
+	\index{procedural programming language}
+	\index{imperative programming language}
+	\index{functional programming language}
+	\index{object-oriented programming language}
+    
+    \section{Procedural Programming}
+        The first programming languages evolved from machine code.  Instead of
+        writing numbers to specify addresses and instructions you could write
+        symbolic names.  The computer executes this sequence of instructions
+        when the user runs the program.  This style of programming is known
+        as \ijargonex{procedural}{procedural programming} or 
+        \ijargonex{imperative}{imperative programming} programming.
+        
+        \lbr{}Some of the first procedural languages include:
+        \begin{itemize}
+            \item \ijargon{FORTRAN}, created in 1957 by IBM to 
+                produce programs to solve mathematical problems.
+                FORTRAN is short for \jargon{formula translation}.
+            \item \ijargon{Algol 60}, created in the late fifties with to goal to
+                provide a ``universal programming language''.  Even though 
+                the language was not widely used, its syntax became the
+                standard language for describing algorithms.
+            \item \ijargon{COBOL}, a ``data processing'' language developed by 
+                Sammett introduced many new data types and 
+               implicit type conversion.
+            \item \ijargon{PL/I}, a programming language that would combine the best
+                features of FORTRAN, Algol and COBOL.
+            \item \ijargon{Algol 68}, the successor to Algol 60.  Also not 
+                widely used, though the ideas it introduced have been 
+                widely imitated.
+            \item \ijargon{Pascal}, created by Wirth to demonstrate a powerful
+                 programming langauge can be simple too, as opposed to
+                 the complex Algol 68, PL/I and others.
+            \item \ijargon{Modula2}, also created by Wirth as an improvement to
+                Pascal with modules as most important new feature.
+            \item \ijargon{C}, designed by Ritchie as a low level language mainly
+                for the task of system programming.  C became very popular
+                because UNIX was very popular and heavily depended on it.
+            \item \ijargon{Ada}, a large and complex language created by Whitaker and
+                one of the latest attempts at designing a procedural language.
+        \end{itemize}
+
+    \section{Functional Programming}
+        Functional programming is based on the abstract model of programming
+        Turing introduced, known as the \ijargon{Turing Machine}.  Also the
+        theory of recursive functions Kleene and Church introduced play
+        an important role in functional programming.  The big difference
+        with procedural programming is the insight that everything can be 
+        done with expression as opposed to commands.
+        
+        \lbr{}Some important functional programming languages:
+        \begin{itemize}
+            \item \ijargon{LISP}, the language that introduced functional programming.
+                Developed by John McCarthy in 1958.
+            \item \ijargon{Scheme}, a language with a syntax and semantics very similar
+                to LISP, but simpler and more consistent.  Designed by 
+                Guy L. Steele Jr. and Gerald Lay Sussmann.  
+            \item \ijargon{SASL}, short for St. Andrew's Symbolic Language. It was created 
+                by David Turner and has an Algol like syntax.
+            \item \ijargon{SML}, designed by Milner, Tofte and Harper as 
+                a ``metalanguage''.
+        \end{itemize}    
+        
+    \section{Object Oriented Programming}
+        Object oriented programming is entirely focused on objects, 
+        not functions.  It has some major advantages over procedural 
+        programming.  Well written code consists of objects that keep 
+        their data private and only accesible through certain methods 
+        (the interface), this concept is known as \ijargon{encapsulation}.  
+        Another important object oriented programming concept is 
+        \ijargon{inheritance}---a mechanism to have 
+        objects inherit state  and behaviour from their superclass.
+        
+        \lbr{}Important object oriented programming languages:
+        \begin{itemize}
+            \item \ijargon{Simula}, developed in Norway by Kristiaan Nyaard and
+                Ole-Johan Dahl.  A language to model system, wich are
+                collections of interacting processes (objects), wich
+                in turn are represented by multiple procedures.
+            \item \ijargon{SmallTalk}, originated with Alan Kay's ideas on 
+                computers and programming.  It is influenced by LISP 
+                and Simula.
+            \item \ijargon{CLU}, a language introduced by Liskov and Zilles to
+                support the idea of \ijargon{information hiding} (the 
+                interface of a module should be public, while the 
+                implementation remains private).
+            \item \ijargon{C++}, created at Bell Labs by Bjarne Soustroup as
+                a programming language to replace C.  It is a 
+                hybrid language --- it supports both imperative and 
+                object oriented programming.
+            \item \ijargon{Eiffel}, a stricly object oriented language wich 
+                is strongly focused on software engineering.
+            \item \ijargon{Java}, a object oriented programming language with 
+                a syntax wich looks like C++, but much simpler. 
+                Java is compiled to byte code wich makes it portable.  
+                This is also the reason it became very popular for
+                web development.
+            \item \ijargon{Kevo}, a language based on prototypes instead of
+                classes.
+        \end{itemize}
+        
+       
+	\section{Timeline}
+	   
+	   	In this section, we give a compact overview of the timeline of compiler construction.
+	   	As described in the overview article \cite{history_byte}, the conception of the first
+	   	computer language goes back as far as 1946. In this year (or thereabouts), Konrad Zuse,
+	   	a german engineer working alone Konrad Zuse, a German engineer working alone while 
+	   	hiding out in the Bavarian Alps, develops \jargon{Plankalkul}. He applies the 
+	   	language to, among other things, chess. Not long after that, the first compiled language
+	   	appears: \jargon{Short Code}, which the first computer language actually used on 
+	   	an electronic computing device. It is, however, a ``hand-compiled'' language. 
+	   
+		\lbri{}In 1951, Grace Hopper, working for Remington Rand, begins design work on the first
+	   	widely known compiler, named \jargon{A-0}. When the language is released by Rand
+	   	in 1957, it is called \jargon{MATH-MATIC}.  Less well-known is the fact that almost
+	   	simulaneously, a rudimentary compiler was developed at a much less professional level.
+	 	Alick E. Glennie, in his spare time at the University of Manchester, devises a
+	 	compiler called \jargon{AUTOCODE}.
+	 	
+	 	\lbri{}A few years after that, in 1957, the world famous programming language \jargon{FORTRAN}
+	 	(FORmula TRANslation) is conceived. John Backus (responsible for his Backus-Naur Form for
+	 	syntax specification) leads the development of FORTRAN and later on works on the \jargon{ALGOL}
+	 	programming language. The publication of FORTRAN was quickly followed by \jargon{FORTRAN II} (1958),
+	 	which supported subroutines (a major innovation at the time, giving birth to the concept
+	 	of modular programming). 
+	 	
+	 	\lbri{}Also in 1958, John McCarthy at M.I.T. begins work on \jargon{LISP}--LISt Processing, the precursor
+	 	of (almost) all functional programming languages we know today. Also, this is the year in
+	 	which the \jargon{ALGOL} programming language appears (at least, the specification). 
+	 	The specification of ALGOL does not describe how data will be input or output; that is left 
+	 	to the individual implementations. 
+	 	
+	 	\lbri{}1959 was another year of much innovation. \jargon{LISP 1.5} appears and the functional programming
+	 	paradigm is settled. Also, \jargon{COBOL} is created by the Conference on Data Systems and 
+	 	Languages (CODASYL). In the next year, the first actual implementation of ALGOL appears 
+	 	(\jargon{ALGOL60}). It is the root of the family tree that will ultimately produce the 
+	 	likes of \jargon{Pascal} by Niklaus Wirth. ALGOL goes on to become the most popular 
+	 	language in Europe in the mid- to late-1960s. 
+
+		\lbri{}Sometime in the early 1960s, Kenneth Iverson begins work on the language that will become
+		\jargon{APL} -- A Programming Language. It uses a specialized character set that, 
+		for proper use, requires APL-compatible I/O devices. In 1962, Iverson publishes a book
+		on his new language (titled, aptly, \jargon{A Programming Language}). 1962 is also the year
+		in which \jargon{FORTRAN IV} appears, as well as \jargon{SNOBOL} (StriNg-Oriented symBOlic Language) and
+		associated compilers.   
+
+		\lbri{}In 1963, the new language \jargon{PL/1} is conceived. This language will later form the basis for
+		many other languages. In the year after, \jargon{APL/360} is implemented and at Dartmouth University,
+		professors John G. Kemeny and Thomas E. Kurtz invent \jargon{BASIC}. The first implementation
+		is a compiler. The first BASIC program runs at about 4:00 a.m. on May 1, 1964. 
+		
+		\lbri{}Languages start appearing rapidly now: 1965 - \jargon{SNOBOL3}. 1966 - \jargon{FORTRAN 66} and
+		\jargon{LISP 2}. Work begins on \jargon{LOGO} at Bolt, Beranek, \& Newman. The team is 
+		headed by Wally Fuerzeig and includes Seymour Papert. LOGO is best known for its 
+		``turtle graphics.'' Lest we forget: 1967 - \jargon{SNOBOL4}.
+		
+		\lbri{}In 1968, the aptly named ALGOL68 appears. This new language is not altogether a success, and
+		some members of the specifications committee--including C.A.R. Hoare and Niklaus Wirth--protest 
+		its approval. ALGOL 68 proves difficult to implement. Wirth begins work on his new language
+		\jargon{Pascal} in this year, which also sees the birth of \jargon{ALTRAN}, a FORTRAN variant,
+		and the official definition of \jargon{COBOL} by the American National Standards Institute (ANSI). 
+		Compiler construction attracts a lot of interest -- in 1969, 500 people attend an APL conference 
+		at IBM's headquarters in Armonk, New York. The demands for APL's distribution are so
+		great that the event is later referred to as ``The March on Armonk.'' 
+		
+		\lbri{}Sometime in the early 1970s , Charles Moore writes the first significant programs in his new
+		language, \jargon{Forth}. Work on \jargon{Prolog} begins about this time. Also sometime in
+		the early 1970s, work on \jargon{Smalltalk} begins at Xerox PARC, led by Alan Kay. Early 
+		versions will include Smalltalk-72, Smalltalk-74, and Smalltalk-76. An implementation of \jargon{Pascal}
+		appears on a CDC 6000-series computer. \jargon{Icon}, a descendant of SNOBOL4, appears. 
+		
+		\lbri{}Remember 1946? In 1972, the manuscript for Konrad Zuse's \jargon{Plankalkul} (see 1946) is
+		finally published. In the same year, Dennis Ritchie and Brian Kernighan produces \jargon{C}. The definitive
+		reference manual for it will not appear until 1974. The first implementation of 
+		\jargon{Prolog} -- by Alain Colmerauer and Phillip Roussel -- appears. Three years later,
+		in 1975, \jargon{Tiny BASIC} by Bob Albrecht and Dennis Allison (implementation by
+		Dick Whipple and John Arnold) runs on a microcomputer in 2 KB of RAM. A 4-KB machine
+		is sizable, which left 2 KB available for the program. Bill Gates and Paul Allen
+		write a version of BASIC that they sell to MITS (Micro Instrumentation and Telemetry 		
+		Systems) on a per-copy royalty basis. MITS is producing the Altair, an 
+		8080-based microcomputer. Also in 1975, \jargon{Scheme}, a LISP dialect by 
+		G.L. Steele and G.J. Sussman, appears. Pascal User Manual and Report, by Jensen and Wirth, 
+		(also extensively used in the conception of \langname{}) is published.  
+
+		\lbri{}B.W. Kerninghan describes \jargon{RATFOR} -- RATional FORTRAN. It is a preprocessor
+		that allows C-like control structures in FORTRAN. RATFOR is used in 
+		Kernighan and Plauger's ``Software Tools,'' which appears in 1976. In that same year,
+		the \jargon{Design System Language}, a precursor to \jargon{PostScript} (which was
+		not developed until much later), appears. 
+		
+		\lbri{}In 1977, ANSI defines a standard for \jargon{MUMPS}: the Massachusetts General Hospital
+		Utility Multi-Programming System. Used originally to handle medical records, 
+		MUMPS recognizes only a string data-type. Later renamed M. The design competition
+		(ordered by the Department of Defense) that will produce Ada begins. A team led by 
+		Jean Ichbiah, will win the competition. Also, sometime in the late 1970s, Kenneth 
+		Bowles produces \jargon{UCSD Pascal}, which makes Pascal available on 
+		PDP-11 and Z80-based (remember the ZX-spectrum) computers and thus for ``home use''. 
+		Niklaus Wirth begins work on \jargon{Modula}, forerunner of \jargon{Modula-2} and 
+		successor to \jargon{Pascal}. 
+
+		\lbri{}The text-processing language AWK (after the designers: Aho, Weinberger and Kernighan)
+		becomes available in 1978. So does the ANSI standard for \jargon{FORTRAN 77}. Two years
+		later, the first ``real'' implementation of \jargon{Smalltalk} (Smalltalk-80) appears. So
+		does \jargon{Modula-2}. Bjarne Stroustrup develops ``C With Classes'', which will eventually
+		become \jargon{C++}. 
+		
+		\lbri{}In 1981, design begins on \jargon{Common LISP}, a version of LISP that must unify the
+		many different dialects in use at the time. Japan begins the ``Fifth Generation 
+		Computer System'' project. The primary language is \jargon{Prolog}.  In the next year,
+		the International Standards Organisation (ISO) publishes \jargon{Pascal} appears. 
+		PostScript is published (after DSL). 
+		
+		\lbri{}The famous book on Smalltalk: \jargon{Smalltalk-80: The Language and Its
+		Implementation} by Adele Goldberg is published. \jargon{Ada} appears, the language named after 
+		Lady Augusta Ada Byron, Countess of Lovelace and daughter of the English poet Byron. 
+		She has been called the first computer programmer because of her work on Charles 
+		Babbage's analytical engine. In 1983, the Department of Defense '(DoD) directs that all 
+		new ``mission-critical'' applications be written in Ada. 
+
+		\lbri{}In late 1983 and early 1984, Microsoft and Digital Research both release the first
+		C compilers for microcomputers. The use of compilers by back-bedroom programmers becomes
+		almost feasible. In July , the first implementation of C++ appears.  It is in 1984
+		that Borland produces its famous \jargon{Turbo Pascal}. A reference manual for 
+		\jargon{APL2} appears, an extension of APL that permits nested arrays. 
+		
+		\lbri{}An important year for computer languages is 1985. It is the year in which
+		\jargon{Forth} controls the submersible sled that locates the wreck of the 
+		Titanic. \jargon{Methods}, a line-oriented Smalltalk for personal computers, is introduced. Also,
+		in 1986, jargon{Smalltalk/V} appears--the first widely available version 
+		of Smalltalk for microcomputers. Apple releases \jargon{Object Pascal} for the Mac,
+		greatly popularizing the Pascal language. Borland extends its ``Turbo'' product line
+		with \jargon{Turbo Prolog}. 
+
+		\lbri{}Charles Duff releases \jargon{Actor}, an object-oriented language for
+		developing Microsoft Windows applications. \jargon{Eiffel}, an object-oriented 
+		language, appears. So does \jargon{C++}. Borland produces the fourth incarnation
+		of Turbo Pascal (1987). In 1988, the spefication of CLOS (Common LISP Object System)
+		is fianlly published. Wirth finishes \jargon{Oberon}, his follow-up to Modula-2, his
+		third language so far. 
+		
+		\lbri{}In 1989, the ANSI specification for \jargon{C} is published, leveraging the already
+		popular language even further. \jargon{C++ 2.0} arrives in the form of a draft 
+		reference manual. The 2.0 version adds features such as multiple inheritance 
+		(not approved by everyone) and pointers to members. A year later, the 
+		\jargon{Annotated C++ Reference Manual} by Bjarne Stroustrup is published, 
+		adding templates and exception-handling features. \jargon{FORTRAN 90} includes 
+		such new elements as case statements and derived types. Kenneth Iverson and 
+		Roger Hui present \jargon{J} at the APL90 conference. 
+		
+		\lbri{}\jargon{Dylan} -- named for Dylan Thomas -- an object-oriented language resembling
+		\jargon{Scheme}, is released by Apple in 1992. A year later, ANSI releases the 
+		X3J4.1 technical report -- the first-draft proposal for object-oriented COBOL. 
+		The standard is expected to be finalized in 1997. 
+		
+		\lbri{}In 1994, Microsoft incorporates \jargon{Visual Basic for Applications} into Excel and
+		in 1995, ISO accepts the 1995 revision of the \jargon{Ada} language. 
+		Called \jargon{Ada 95}, it includes OOP features and support for real-time systems.
+
+		\lbri{}This concludes the compact timeline of the evolution of programming languages.
+        Of course, in the present day, another revolution is taking place, in the form of
+        the Microsoft .NET platform. This platform is worth an entire book unto itself,
+        and much literature is in fact already available. We will not discuss the .NET platform
+        and the \ijargon{common language specification} any further in this book. It is now
+        time to move on to the first part of building our \jargon{own} compiler.
+	
+		\begin{thebibliography}{99}
+			\bibitem{history_prolog} T. Dodd: \emph{An Advanced Logic Programming
+			    Language - Prolog-2 Encyclopedia}, Blackwell Scientific Publications Ltd., 1990.
+			\bibitem{history_looijen} M. Looijen: \emph{Grepen uit de Geschiedenis van de Automatisering},
+				Kluwer Bedrijfswetenschappen, Deventer, 1992.
+			\bibitem{history_rebelcode} G. Moody: \emph{Rebel Code - Inside Linux and the
+				Open Source Revolution}, Perseus Publishing, 2001.
+         	\bibitem{history_byte} N.N.\emph{A Brief History of Programming Language},
+         	    BYTE Magazine, 20th anniversary, 1995.
+			\bibitem{history_languages_1} P.H. Salus: \emph{Handbook of Programming Languages,
+                Volume I: Object-oriented Programming Languages}, Macmillan Technical Publishing,
+                1998.
+			\bibitem{history_languages_2} P.H. Salus: \emph{Handbook of Programming Languages,
+                Volume II: Imperative Programming Languages}, Macmillan Technical Publishing,
+                1998.
+			\bibitem{history_languages_3} P.H. Salus: \emph{Handbook of Programming Languages,
+                Volume III: Little Languages and Tools}, Macmillan Technical Publishing,
+                1998.
+			\bibitem{history_languages_4} P.H. Salus: \emph{Handbook of Programming Languages,
+                Volume IV: Functional and Logic Programming Languages}, Macmillan Technical Publishing,
+                1998.
+       	\end{thebibliography}
+
+

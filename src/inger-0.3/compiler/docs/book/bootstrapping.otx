@@ -1,0 +1,72 @@
+\chapter{Bootstrapping} \label{chap_bootstrapping}
+    
+A subject which has not been discussed so far is \ijargon{bootstrapping}. Bootstrapping
+means building a compiler in its own language. So for the \langname{} language
+it would mean that we build the compiler in the \langname{} language as well. To discuss
+the practical application of this theory is beyond the scope of this book. Below we
+explain it in theory.
+
+Developing a new language is mostly done to improve some aspects compared to
+other, existing languages. What we would prefer, is to compile the compiler in its own language,
+but how can that be done when there is no compiler to compile the compiler? To
+visualize this problem we use so-called \ijargonex{T-diagrams}{T-diagram}, to illustrate
+the process of bootstrapping. To get familiar with T-diagrams we present a few examples. \\
+
+     \begin{example}{T-Diagrams}{ex_T-Diagrams}
+        \diagram{Conclusion_boot1.png}{Program \code{P} can work on machine with language \code{M}.
+        \code{I} = input, \code{O} = output.}{fig_bootstrapping_1}
+        \diagram{Conclusion_boot2.png}{Interpreter for language \code{T}, 
+        is able to work on a machine with language \code{M}.}{fig_bootstrapping_2}
+        \diagram{Conclusion_boot3.png}{ Compiler for language \code{T1} to language \code{T2}, 
+        is able to work on a machine with language \code{M}.}{fig_bootstrapping_3}
+        \diagram{Conclusion_boot4.png}{ Machine for language \code{M}.}{fig_bootstrapping_4}
+        \diagram{Conclusion_boot5.png}{ Program \code{P} runs on machine \code{M}.}{fig_bootstrapping_5}
+    \end{example}
+
+The bootstrapping problem can be resolved in the following way:
+\begin{enumerate}
+    \item Build two versions of the complier. One version is the \ijargon{optimal-compiler}
+    and the other version is the \ijargon{bootstrap-compiler}. The optimal compiler
+    written for the new language \code{T}, complete with all optimisation is written
+    in language \code{T} itself. The bootstrap-compiler is written in an existing language
+    \code{m}. Because this compiler is not optimized and therefore slower in use, the $m$ is
+    written in lowercase instead of uppercase.
+
+    \begin{quote}
+        \diagram{Conclusion_boot6.png}{The two compilers.}{fig_bootstrapping_6}
+    \end{quote}
+    
+    \item Translate the optimal-compiler with the bootstrap-compiler. The result 
+    is the optimal-compiler, which can run on the target machine \code{M}. However, 
+    this version of the compiler is not optimized yet (slow, and a lot of memory usage).
+    We call this the temporary-compiler.
+    \begin{quote}
+        \diagram{Conclusion_boot7.png}{temporary-compiler.}{fig_bootstrapping_7}
+    \end{quote}
+    
+    \item Now we must the compile the optimal-compiler again, only this time we
+    use the temporary-compiler to compile it with. The result will be the final, optimal compiler
+    able to run on machine M. This compiler will be fast and produce optimized output.
+    \begin{quote}
+        \diagram{Conclusion_boot8.png}{compile process.}{fig_bootstrapping_8}
+    \end{quote}
+    
+    \item The result:
+    \begin{quote}
+        \diagram{Conclusion_boot9.png}{final-compiler.}{fig_bootstrapping_9}
+    \end{quote}
+    
+    It is a long way before you have a bootstrap compiler, but remember, this is
+    the ultimate compiler!
+\end{enumerate}
+
+
+
+
+        
+        
+        
+        
+ 
+	    
+               

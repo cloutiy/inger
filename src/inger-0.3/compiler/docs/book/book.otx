@@ -1,0 +1,124 @@
+% book.tex
+% Practical Compiler Construction
+% main book source
+
+% - We pick a5paper, but can switch to a4paper at any time.
+% - openany = chapters can start on right and left pages.
+%   Alternative: openright (only on right pages)
+% - twoside = make up for two-sided printing. Alternative: oneside
+% - 10pt could be 11pt or 12pt.
+\documentclass[10pt,twoside,a4paper,openany]{book}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                                 %%
+%%                     PACKAGES                    %%
+%%                                                 %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage{graphicx}
+\usepackage{makeidx}	\makeindex
+\usepackage{verbatim}
+
+%%
+%% We use the amssymb package for the \square and 
+%% \blacksquare symbols, with which we terminate 
+%% examples and definitions, respectively.
+%%
+\usepackage{amssymb}
+
+%%
+%% The alltt provides the alltt environment, which
+%% is like verbatim but the { and \ keep their
+%% LaTeX meaning.
+%%
+\usepackage{alltt}
+
+
+%%
+%% The listings package provides syntax-highlighted
+%% C and Inger sources.
+%%
+\usepackage{inger}
+
+
+% This is the working title.
+\title{Compiler Construction\\A Practical Approach}
+
+% \and lets LaTeX divide the author names over two lines.
+% An alternative would be "A, B, C,\\D and E."
+% (where \\ inserts a linebreak).
+\author{F.J.F. Benders\\J.W. Haaring\\T.H. Janssen\\D. Meffert\\A.C. van Oostenrijk}
+
+\begin{document}
+    % pagestyle{plain} puts page numbers centered at the
+    % bottom.
+    % Alternative: pagestyle{headings}, which
+    % include chapter title in header text.
+    % Alternative: pagestyle{empty} (no header/footer at all).
+    % use thispagestyle(...) to change page style locally.
+    \pagestyle{plain}
+
+    % Generate title page (includes title, authors and current
+    % date).
+    \maketitle
+    \newpage
+
+    \include{abstract}
+    \newpage
+
+    \include{acknowledgements}
+
+    % Generate table of contents. Does not include starred
+    % sections, chapters, paragraphs etc.
+    \tableofcontents
+
+    \newtheorem{definition_theorem}{Definition}[chapter]
+    \newtheorem{example_theorem}{Example}[chapter]
+    \newtheorem{advice_theorem}{Practical advice}[chapter]
+
+	\include{intro}
+	\include{history}
+
+    \part{Inger}
+    \include{langspec}
+
+    \part{Syntax}
+    \include{syntaxintro}
+    \include{lexer}
+    \include{grammar}
+	\include{parsing}
+    \include{preprocessor}
+    \include{error}
+    
+    \part{Semantics}
+	\include{semanalysis}
+    \include{symboltable}
+    \include{typechecker}
+    \include{miscsemchecks}
+    
+    \part{Code Generation}
+    \include{codegenintro}
+    \include{codegen}
+    \include{codetemplates}
+	\include{bootstrapping}
+
+	\include{conclusion}
+
+    % After 'appendix' all chapters are numbered as appendices.
+
+    \appendix
+
+    \include{requirements}
+    \include{software}
+	\include{operations}
+	\include{bnf}
+	\include{syndiagrams}
+    \include{lexerappendix}
+	\include{logicparser}
+
+    \lstlistoflistings
+
+    \printindex
+
+\end{document}

@@ -1,0 +1,368 @@
+
+\chapter{Type Checking} \label{chap_typechecking}
+
+	\map{map3typecheck.png}
+
+
+\section{Introduction}
+    Type checking is part of the symantic analysis. The 
+    purpose of type checking is to evaluate each operator,
+    application and return statement in the AST (Abstract Syntax Tree) 
+    and search for its operands or arguments. The operands or arguments
+    must both be of compatible types and form a valid combination with
+    the operator. For instance: when the operator is \code{+}, the left operand
+    is a integer and the right operand is a char pointer, it is not 
+    a valid addition. You can not add a char pointer to an integer without
+    explicit coercion.
+    
+    The type checker evaluates all nodes where types are used
+    in an expression and produces an error when it cannot find
+    a decent solution (through \ijargon{coercion}) to a type conflict.
+            
+    Type checking is one of the the last steps to detect semantic errors 
+    in the source code. After there are a few symantic checks left before
+    code generation can commence.
+       
+    This chapter discusses the process of type checking, how to modify 
+    the AST by including type info and produce proper error messages when 
+    necessary.
+    
+
+\section{Implementation}
+
+    The process of type checking consists of two parts:
+    
+    \begin{itemize} 
+        \item Decorate the AST with types for literals.
+        \item Propagate these types up the tree taking into account:
+        \begin{itemize}
+        	\item Type correctness for operators
+        	\item Type correctness for function arguments
+        	\item Type correctness for \lstinline{return} statements
+        	\item If types do not match in their simple form 
+        	      (\lstinline$int, float$ etc\ldots{}) try to coerce these types.
+        \end{itemize}
+        \item Perform a last type check to make sure indirection levels are correct (e.g. 
+              assigning an \lstinline{int} to a pointer variable.
+    \end{itemize}  
+      
+    \subsection{Decorate the AST with types}
+    
+        To decorate the AST with types it is advisable to walk post-order 
+        through the AST and search for all literal identifiers or values.         
+        When a literal is found in the AST the type must be 
+        located in the symbol table. Therefore it is necessary 
+        when walking through the AST to keep track of the 
+        current scope level. The symbol table provides the 
+        information of the literal (all we are interested 
+        in is the type) and this will be stored in the AST. 
+        
+        The second step is to move up in the AST and evaluate 
+        types for unary, binary and application nodes.
+        
+        \lstset{language=Inger}
+        \lstset{style=Source}
+        The \ref{fig_ast_type_expand} illustrates the process 
+        of expanding the tree. It shows the AST decoration process for the 
+        expression \lstinline$a = b + 1;$. The variable \code{a} and \code{b} 
+        are both declared as an integer.
+        		
+		\begin{example}{Decorating the AST with types.}{ex_expand_ast_with_types}
+		        
+        	\diagram{Typecheck_decorate_AST.png}{AST type expanding}{fig_ast_type_expand}
+        
+            The nodes \code{a, b} and \code{1} are the literals. These
+            are the first nodes we encounter when walking post-order 
+            through the tree. The second part is to determine the
+            types of node \code{+} and node \code{=}. After we passed the
+            the literals \code{b} and \code{1} we arrive at node
+            \code{+}. Because we have already determined the type
+            of its left and right child we can evaluate its
+            type. In this case the outcome (futher referred to in the
+            text as the \jargon{result type}) is easy. Because node \code{b} and
+            \code{1} are both of the type \code{int}, node
+            \code{+} will also become an \code{int}.
+          
+            Because we are still walking post-order through the
+            AST we finally arrive at node
+            \code{=}. The right and left child are also both integers so this 
+            node will also become an integer.
+        
+        \end{example}
+              
+        The advantage by walking post-order through the AST is that all the
+        typechecking can be done in one pass. If you were to walk pre-order 
+        through the AST it would be advisible to decorate the AST with types in 
+        two passes. The first pass should walk pre-order through the AST and 
+        decorate only the literal nodes, and the second pass which walks 
+        pre-order through the AST evaluates the parent nodes from the literals. 
+        This cannot be done in one pass because the first time walking pre-order 
+        through the AST you will first encounter the \code{=} node. 
+        When you try to evaluate its type you will find that the children 
+        do not have a type.
+        
+        The above example was easy; all the literals were integers so the 
+        result type will also be an integer. But what would happen if one of the 
+        literals was a float and the others are all integers. 
+        
+        One way of dealing with this problem is to create a table with 
+	    conversion priorities. When for example a \code{float} and an \code{int} 
+	    are located, the highest priority operator wins. These priorities can be found 
+	    in the table for each operator. For an example of this table, see table
+        \ref{table_conversion_priorities}. In this table the binary operators 
+        assign \code{=} and add \code{+} are implemented. The final version of 
+        this table has all binary implemented. The same goes for all unary operators
+        like the not (\code{!}) operator.
+	
+	    \begin{table} [htbp]
+		    \begin{center}
+    			\begin{tabular}{ll}
+		   		    \tableheader{Node} & \tableheader{Type} \\
+	    			\hline
+	    			    \code{NODE\_ASSIGN} & \code{FLOAT} \\
+	    			    \code{NODE\_ASSIGN} & \code{INT} \\
+	    			    \code{NODE\_ASSIGN} & \code{CHAR} \\
+	    			    \code{NODE\_BINARY\_ADD} & \code{FLOAT} \\
+	    			    \code{NODE\_BINARY\_ADD} & \code{INT} \\
+	    			\hline
+				\end{tabular}
+				\caption{Conversion priorities}
+				\label{table_conversion_priorities}
+		    \end{center}
+	    \end{table}
+	    The highest priority is on top for each operator.
+	 
+        The second part is to make a list of types which can be converted for 
+        each operator. In the \langname{} language it is possible to convert an 
+        integer to a float but the conversion from integer to string is not
+        possible. This table is called the coercion table. For an example see table
+        \ref{table_coercion}. 
+        
+   	    \begin{table} [htbp]
+	        \begin{center}
+	    		\begin{tabular}{lll}
+		   		    \tableheader{From type} & \tableheader{To type} & \tableheader{New node}\\
+	    			\hline
+	    			    \code{INT} & \code{FLOAT} & \code{NODE\_INT\_TO\_FLOAT} \\
+	    			    \code{CHAR} & \code{INT} & \code{NODE\_CHAR\_TO\_INT} \\
+	    			    \code{CHAR} & \code{FLOAT} & \code{NODE\_CHAR\_TO\_FLOAT} \\
+	    			\hline
+				\end{tabular}
+				\caption{Coercion table}
+				\label{table_coercion}
+	        \end{center}
+	    \end{table}
+
+        A concrete example is explained in section \ref{fig_ast_type_float}. It shows 
+        the AST for the expression \code{ a = b + 1.0;}. The variable \code{a} 
+        and is declared as a float and \code{b} is declared by the type of 
+        integer. The literal \code{1.0} is also a float.
+                
+        \begin{example}{float versus int.}{ex_float_vs_int}
+		        
+        	\diagram{Typecheck_decorate_float.png}{Float versus int }{fig_ast_type_float}
+        	
+        	The literals \code{a}, \code{b} and \code{1.0} are all looked up
+        	in the symbol table. The variable \code{a} and the literal \code{1.0} are
+        	both floats. The variable \code{b} is an integer.
+        	Because we are walking post-order through the AST the first
+        	operator we encounter is the \code{+}. Operator \code{+} has as its left
+        	child an integer and the right child is a float. Now it is time to use the lookup 
+        	table to find out of what type the \code{+} operator must be.
+        	It appears that the first entry for the operator \code{+} in the lookup
+        	table is of the type float. This type has the highest priority.
+        	Because one of the two types is also a float, the result type for the 
+        	operator \code{+} will be a float.
+        	
+        	It is still nessesary to check if the other child can be converted to the
+        	float. If not, an error message should appear on the screen.
+        	
+        	The second operator is the operator \code{=}. This will be exactly
+        	the same process as for the \code{+} operator. The left child (\code{a}) is 
+        	of type	float and the right child \code{+} of type float so operator \code{=}       	
+        	will also become a float.
+        	
+        	However, what would happen if the left child of the assignment operator 
+        	\code{=} was an integer? Normally the result type should be looked up in
+        	the table \ref{table_conversion_priorities}, but in case of a assignment there is an exception.
+        	For the assignment operator \code{=} its right child determines the result.
+        	So if the left child is an integer, the assignment operator will also
+        	become an integer. When you declare a variable as an integer and an assignment 
+        	takes place of which the right child differs from the original declared type,
+        	an error must occur. It is not possible to change the original declaration type
+        	of any variable. This is the only operator exception you should take care of.
+        
+            We just illustrated an example of what would happen if two different types
+            are encountered, belonging to the same operator. After the complete pass
+            the AST is decorated with types and finally looks like \ref{fig_ast_type_float_result}.   
+            
+            \diagram{Typecheck_decorate_float_result.png}{Float versus int result}{fig_ast_type_float_result}
+        
+        \end{example}
+        
+        \subsection{Coercion}
+        
+        After the decoration of the AST is complete, and all the checks are executed
+        the main goal of the typechecker mudule is achieved. At this point it is 
+        nessesary to make a choice. There are two ways to continue, the first way is
+        to start with the code generation. The type checking module is in this case 
+        completely finished. The second way is to prepare the AST tree for the code
+        generation module. 
+        
+        In the first approach, the type checker's responsibility is now 
+        finished, and it is up to the code generation module to perform the
+        necessary conversions. In the sample source line
+        
+        \lstset{language=Inger}
+        \lstset{style=Source}
+        \begin{lstlisting}[label=listing__typechecker_coercion, caption={Coercion}]
+            int b;
+            float a = b + 1.0;
+        \end{lstlisting}
+        
+        the code generation module finds that since \code{a} is a float,
+        the result of \lstinline$b + 1.0$ must also be a float. This implies
+        that the value of \code{b} must be converted to float in order
+        to add $1.0$ to it and return the sum. To determine that variable \code{b}
+        must be converted to a float it is nessecary to evalute the expression just 
+        like the way it is done in the typechecker module. 
+        
+        In the second approach, the typechecking module takes the responsibility
+        to convert the variable \code{b} to a float. Because the typechecker 
+        module already decorates the AST with all types and therefore concludes any
+        conversion to be made it can easily apply the conversion so the code 
+        generation module does not have to repeat the evaluation process. 
+        
+        To prepare the AST for the above problem we have to apply the coercion
+        technique. Coercion means the conversion form one type to another. However 
+        it is not possible to convert any given type to any other given type. Since 
+        all natural numbers (integers) are elements in the set $\mathbb{N}$ and 
+        all real numbers (float) are in the set $\mathbb{R}$ the following 
+        formula applies:
+        
+        \begin{displaymath}
+            \mathbb{N} \subset \mathbb{R}        
+        \end{displaymath}
+        
+    	A practical application of this theory is it nessesary to modify the AST
+    	by adding new nodes. These new nodes are the so called coercion nodes. The best 
+    	way to explain this is by a practical example. For this example, refer to the
+    	source of listing \ref{listing__typechecker_coercion}.
+        
+        \begin{example}{coercion}{ex_decorate_ast_with_coercion}
+            In the first approach were we let the code generation module take 
+            care of the coercion technique, the AST would end up looking like figure
+            \ref{fig_ast_type_float_result}.
+            In the second approach, were the typechecker module takes responsibility
+            for the coercion technique, the AST will have the structure shown in
+            figure \ref{fig_ast_type_coercion}.
+            
+            Notice that the position of node \code{b} is repleaced by node 
+            \code{IntToFloat} and node \code{b} has become a child of node \code{IntToFloat}.
+            The node \code{IntToFloat} is called the coercion node. When we arrive 
+            during the typechecker pass at node \code{+}, the left and right child 
+            are both evaluated. Because the right child is a float and the right
+            child an integer the outcome must be a float. This is determined by the
+            type lookup table \ref{table_conversion_priorities}. Since we now know the result type for node 
+            \code{+} we can apply the coercion technique for its childs. This is only 
+            required for the child of which the type differs from its parent 
+            (node \code{+}). 
+            
+            \diagram{Typecheck_decorate_AST_coersion.png}{AST coercion}{fig_ast_type_coercion}
+            
+            When we find a child which type differs from its parent we use the coercion
+            table \ref{table_coercion} to check if it is possible to convert 
+            the type of the child node (node \code{b}) to its parent type. 
+            If this is not possible an error message must be produced and the 
+            compilation progress will stop. When it is possible to apply the conversion 
+            it is required to insert a new node in the AST. This node will replace 
+            node \code{b} and the type becomes a float. Node \code{b} will be its child. 
+            
+            
+        \end{example}
+        
+        \section{Overview.}
+        Now all the steps for the typechecker module are completed. The AST
+        is decorated with types and prepared for the code generation module. 
+        Example \ref{ex_decorate_ast_with_types} gives a complete display of the 
+        AST befor and after the type checking pass.
+        
+        \begin{example}{AST decoration}{ex_decorate_ast_with_types}
+
+            Consult the sample \langname{} program in listing
+            \ref{listing_ast_decoration}. 
+            The AST before decoration is shown in figure 
+            \ref{fig_overview_not_decorated},  notice that all types are unknown 
+            \code{(no type)}.
+            The AST after the decoration is shown in 
+            figure \ref{fig_overview_decorated}.\\
+            \lstset{language=Inger}
+            \lstset{style=Source}
+            \lstset{numbers=none}
+            \begin{lstlisting}[float,caption={Sample program listing},label=listing_ast_decoration]
+module example; 
+start f: void -> float 
+{  
+    float a = 0;
+    int b = 0; 
+    
+    a = b + 1.0;
+  
+    return (a); 
+}
+            \end{lstlisting}           
+	\begin{figure}[!h]
+		\begin{center}
+       		\includegraphics[scale=0.25]{Typecheck_overview_not_decorated.png}
+       		\caption{AST before decoration} \label{fig_overview_not_decorated}
+		\end{center}
+	\end{figure}
+
+	\begin{figure}[!h]
+		\begin{center}
+       		\includegraphics[scale=0.25]{Typecheck_overview_decorated.png}
+       		\caption{AST after decoration} \label{fig_overview_decorated}
+		\end{center}
+	\end{figure}
+                                
+        \end{example}
+               
+        \subsection{Conclusion}
+        Typechecking is the most important part of the semantic analysis. When 
+        the typechecking is completed there could still be some errors in the
+        source. For example 
+        \begin{itemize}
+            \item unreachable code, statements are located after a \code{return} keyword. These
+            statements will never be executed;
+            \item  when the function header is declared with a return type other than
+            \code{void}, the \code{return} keyword must exist in the function body. It will 
+            not check if the return type is valid, this already took place in the
+            typechecker pass;
+            \item check for double \code{case} labels in a \code{switch};
+            \item lvalue check, when a assignment \code{=} is located in the AST
+            its left child can not be a function. This is a rule we applied for the 
+            \langname{} language, other languages may allow this.
+            \item when a \code{goto} statement is encountered the label which the \code{goto} points
+            at must exists.
+            \item function parameter count, when a function is declared with two 
+            parameters (return type excluded), the call to the function must also 
+            have two parameters.
+        \end{itemize}
+        All these small checks are also part of the semantic analysis and will be 
+        discussed in the next chapter. After these checks are preformed the code
+        generation can finally take place. 
+        
+        
+        \begin{thebibliography}{99}
+    		\bibitem{typechecker_Compiler_Design_and_Construction}A.B. Pyster:
+    		  \emph{Compiler Design and Construction}, Van Nostrand Reinhold Company, 1980
+    		\bibitem{typechecker_Compiler_Construction_An_Advanced_Course}G. Goos, J. Hartmanis:
+    		  \emph{Compiler Construction - An Advanced Course}, Springer-Verlag, Berlin, 1974
+	    \end{thebibliography}
+        
+        
+        
+        
+ 
+	    
+               

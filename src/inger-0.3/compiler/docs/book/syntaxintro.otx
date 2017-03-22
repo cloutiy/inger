@@ -1,0 +1,20 @@
+% syntaxintro.otx
+% Practical Compiler Construction
+% Introduction to Syntax Analysis
+
+Humans can understand a sentence, spoken in a language, when
+they hear it (provided they are familiar with the language
+being spoken). The brain is trained to process the incoming
+string of words and give meaning to the sentence. This process
+can only take place if the sentence under consideration obeys
+the grammatical rules of the language, or else it would be
+gibberish. This set of rules is called the \ijargon{syntax}
+of a language and is denoted using a \ijargon{grammar}. 
+This part of the book, \jargon{syntax analysis}, gives
+an introduction to formal grammars (notation and manipulation)
+and how they are used to read (parse) actual sentences in a language. 
+It also discusses ways to vizualize the information gleaned from
+a sentence in a tree structure (a parse tree). Apart from
+theoretical aspects, the text treats practical matters such as
+lexical analysis (breaking a line of text up into individual words and
+recognizing language keywords among them) and tree traversal.

@@ -1,0 +1,36 @@
+The first step in building a compiler is to create a new language. It is 
+desirable to create a language which implements new features with respect to 
+other languages. In case of the \langname{} language there are no exciting new 
+features. Our goal is to show all steps that must be taken to build a 
+compiler from scratch.
+
+The first part of this book contains the specification of the \langname{}
+language. Inger is a \ijargon{symbolic machine language}, comparable to the
+well-known programming language \jargon{C}. As a matter of fact,
+the \langname{} compiler was written in C.
+
+Because the purpose of this book is to teach how to build a compiler, we did not
+implement all features that most production compilers have, such as records
+(\code{struct} and \code{union} in C) and enumerations (\code{enum} in C). 
+The features we did implement are:
+
+\begin{itemize}
+  \item all the usual operators, for example \code{+}, \code{-}, \code{*} and \code{=};
+  \item modularization and external functions, to support the use of C libraries;
+  \item basic types, including \code{char}, \code{float} and \code{int}.
+\end {itemize}
+
+The next chapter contains detailed information on the \langname{} language.
+Please refer to the appendices for more compact information, including
+operator precedence and associativity tables, full Backus-Naur form and syntax
+diagrams.
+
+  
+
+        
+        
+        
+        
+ 
+	    
+               
