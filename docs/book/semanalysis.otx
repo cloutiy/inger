@@ -1,0 +1,88 @@
+% semanalysis.tex
+%
+% introductory text for the semantic part of the book
+
+    We are now in a position to continue to the next 
+    level and take a look at the shady side of compiler 
+    construction; \ijargon{semantics}.
+    This part of the book will provide answers to questions 
+    like: What are semantics good for? What is the 
+    difference between syntax and semantics? Which checks are
+    performed? What is typechecking? And what is a 
+    \ijargon{symbol table}? In other words, this chapter 
+    will unleash the riddles of \ijargon{semantic analysis}.
+    Firstly it is important to know the difference between syntax 
+    and semantics. Syntax is the grammatical arrangement of words 
+    or tokens in a language which establishes their necessary relations. Hence, 
+    \ijargon{syntax analysis} checks the correctness
+    of the relation between elements of a sentence. Let's 
+    explain this with an example using a 
+    \ijargon{natural language}. The sentence
+    
+    \begin{quote}    
+			\code{Loud purple flowers talk}
+		\end{quote}
+    
+    is incorrect according to the English grammar, hence the
+    syntax of the sentence is flawed. This means that the 
+    relation between the words is incorrect due to its bad 
+    syntactical construction which results in a meaningless 
+    sentence.
+    
+    Whereas \ijargon{syntax} is about the relation between 
+    elements of a sentence, semantics is concerned with 
+    the meaning of the production. The relation of the 
+    elements in a sentence can be right, while the 
+    construction as a whole has no meaning at all. The 
+    sentence
+        
+    \begin{quote}
+    \code{Purple flowers talk loud}
+    \end{quote}
+    
+    is correct according to the English grammar, but the 
+    meaning of the sentence is not flawless at all since 
+    purple flowers cannot talk! At least, not yet. The 
+    semantic analysis checks for meaningless constructions, 
+    erroneous productions which could have multiple meanings
+    and generates \ijargon{error} en \ijargon{warning} messages. 
+       
+    When we apply this theory on programming languages we 
+    see that \ijargon{syntax analysis} finds syntax errors 
+    such as typos and invalid constructions such as illegal 
+    variable names. However, it is possible to write 
+    programs that are syntactically correct, but still 
+    violate the rules of the language. For example, the 
+    following sample code conforms to the \langname{} 
+    syntax, but is invalid nonetheless: we cannot assign a 
+    value to a function.
+ 
+    \begin{quote}
+        \code{myFunc() = 6};
+    \end{quote}
+     
+    The \ijargon{semantic analysis} is of great importance 
+    since code with assignments like this may act strange 
+    when executing the program after successful compilation.
+    If the program above does not crash with a
+    \jargon{segmentation fault} on execution and apparently
+    executes the way it should, there is a chance that
+    something fishy is going on: it is possible that a
+    new address is assigned to the function \code{myFunc()},
+    or not? We do not assume \footnote{\jargon{Tip 27 from
+    the Pragrammatic Programmer
+    \cite{miscsem_PragmaticProgrammer}: Don't Assume It - Prove
+    It} Prove your assumptions in the actual environment -
+    with real data and boundary conditions} that
+    everything will work the way we think it will work.  
+     
+    Some things are too complex for \ijargon{syntax analysis}, 
+    this is where \ijargon{semantic analysis} comes in. 
+    \ijargon{Type checking} is necessary because we cannot
+    force correct use of \ijargon{types} in the syntax because
+    too much additional information is needed. This additional
+    information, like (return) types, will be available 
+    to the \ijargon{type checker} stored in the \ijargon{AST} 
+    and \ijargon{symbol table}.
+   
+    Let us begin, with the \ijargon{symbol table}.

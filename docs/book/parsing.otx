@@ -1,0 +1,846 @@
+% parsing.otx
+% Practical Compiler Construction
+% Chapter: Parsing
+
+
+\chapter{Parsing} \label{chap_parsing}
+
+	\map{map2parsing.png}
+
+    \section{Introduction}
+
+		In the previous chapter, we have devised grammars for formal languages. In order
+        to generate valid sentences in these languages, we have written derivation schemes,
+        and syntax trees. However, a compiler does not work by generating sentences in some
+        language, buy by recognizing (parsing) them and then translating them to another
+        language (usually assembly language or machine language).
+
+		In this chapter, we discuss how one writes a program that does exactly that: parse
+        sentences according to a grammar. Such a program is called a \ijargon{parser}.
+        Some parsers build up a syntax tree for sentences as they recognize them. These
+        syntax trees are identical to the ones presented in the previous chapter, but
+        they are generated inversely: from the concrete sentence instead of from a
+        derivation scheme. In short, a parser is a program that will read an input text
+        and tell you if it obeys the rules of a grammar (and if not, why -- if the parser
+        is worth anything). Another way of saying it would be that a parser determines
+        if a sentence can be generated from a grammar. The latter description states
+        more precisely what a parser does.
+
+		Only the more elaborate compilers build up a syntax tree in memory, but we will
+		do so explicitly because it is very enlightening. We will also discuss a technique
+        to simplify the syntax tree, thus creating an \ijargon{abstract syntax tree}, which
+        is more compact than the original tree. The abstract syntax tree is very important:
+		it is the basis for the remaining compilation phases of semantic analysis and
+		code generation.
+
+		Parsing techniques come in many flavors and we do not presume to be able to
+        discuss them all in detail here. We will only fully cover LL(1) parsing (recursive
+        descent parsing), and touch on LR(k) parsing. No other methods are discussed.
+
+	\section{Prefix code}
+
+		The grammar chapter briefly touched on the subject of \ijargon{prefix notation},
+        or \ijargon{polish notation} as it is sometimes known. Prefix notation was invented
+        by the Polish J. Lukasiewicz in the late 20s. This parenthesis-free notation
+        was a perfect notation for the output of a compiler:
+		
+		\begin{example}{Prefix notation}{ex_prefix_notation_parsing}
+	        \code{1 + 2 * 3} becomes \code{+ 1 * 2 3}\\
+			\code{1 / 2 - 3} becomes \code{- / 1 2 3}
+		\end{example}
+
+		In the previous chapter, we found that operator precedence and associativity can
+        and should be handled in a grammar. The later phases (semantic analysis and
+        code generation) should not be bothered with these operator properties
+		anymore--the parser should convert the input text to an intermediate format
+		that implies the operator priority and associativity. An unambiguous syntax
+        tree is one such structure, and prefix notation is another.
+
+		Prefix notation may not seem very powerful, but consider that fact that it
+        can easily be used to denote complex constructions like \code{if \ldots then}
+        and \code{while .. do} with which you are no doubt familiar (if not, consult
+        chapter \ref{chap_langspec}):
+
+		\lstset{language=Inger}
+		\lstset{style=Source}
+		\begin{center}
+			\begin{tabular}{rcl}
+        		\lstinline$if (var > 0) { a + b } else { b - a }$ & becomes & \verb$?>var'0'+a'b'-b'a'$ \\
+				\lstinline$while (n > 0) { n = n - 1 }$ & becomes & \verb$W>n'0'=n'-'n'1'$ \\
+			\end{tabular}
+		\end{center}
+
+		Apostrophes (\code{'}) are often used as monadic operators that delimit a variable name, so that two variables
+        are not actually read as one. As you can deduct from this example, prefix notation is
+        actually a flattened tree. As long as the number of operands that each operator takes is
+        known, the tree can easily be traversed using a recursive function. In fact, a very simple
+        compiler can be constructed that translates the mathematical expression language that
+        we devised into prefix code. A second program, the \ijargon{evaluator}, could then
+        interpret the prefix code and calculate the result.
+
+		\diagram{parsing_prefix_if.png}{Syntax Tree for If-Prefixcode}{fig_parsing_prefix_if}
+		\diagram{parsing_prefix_while.png}{Syntax Tree for While-Prefixcode}{fig_parsing_prefix_while}
+
+		To illustrate these facts as clearly as possible, we have placed the prefix expressions
+        for the \code{if} and \code{while} examples in syntax trees (figures
+		\ref{fig_parsing_prefix_if} and \ref{fig_parsing_prefix_while} respectively).
+
+		Notice that the original expressions may be regained by walking the tree in a
+        pre-order fashion. Conversely, try walking the tree in-order or post-order, and
+        examine the result as an interesting exercise.
+
+		The benefits of prefix notation do not end there: it is also an excellent means to
+        eliminate unnecessary \ijargon{syntactic sugar} like whitespace and comments, without
+        loss of meaning.
+
+		The evaluator program is a recursive affair: it starts reading the prefix string
+        from left to right, and for every operator it encounters, it calls itself to retrieve
+        the operands. The recursion terminates when a constant (a variable name or a literal
+        value) is found. Compare this to the method we discussed in the introduction to this
+        book. We said that we needed a \ijargon{stack} to place (\ijargon{shift}) values
+		and operators on that could not yet be evaluated (\ijargon{reduce}). The evaluator
+        works by this principle, and uses the recursive function as a stack.
+		
+		The translator-evaluator construction we have discussed so far may seem rather
+        artificial to you. But real compilers. although more complex, work the same way.
+        The big difference is that the evaluator is the computer processor (CPU) - it cannot
+        be changed, and the code that your compiler outputs must obey the processor's
+        rules. In fact, the machine code used by a real machine like the Intel x86 processor
+		is a language unto itself, with a real grammar (consult the Intel instruction set manual
+        \cite{parsing_intel_2} for details).
+
+		There is one more property of the prefix code and the associated trees: operators are
+        no longer leaf nodes in the trees, but have become internal nodes. We could have used
+        nodes like \code{expression} and \code{term} as we have done before, but these nodes
+        would then be void of content. By making the operators nodes themselves, we save
+        valuable space in the tree.
+
+
+	\section{Parsing Theory}
+
+		We have discussed prefix notations and associated syntax trees (or parse trees), but
+        how is such a tree constructed from the original input (it \jargon{is} called a
+        parse tree, after all)? In this section we present some of the theory that underlies
+        parsing. Note that in a book of limited size, we do not presume to be able to treat
+        all of the theory. In fact, we will limit our discussion to LL(1) grammars and mention
+        LR parsing in a couple of places.
+
+		Parsing can occur in two basic fashions: \ijargon{top-down} and \ijargon{bottom-up}.
+        With top-down, you start with a grammar's \ijargon{start symbol} and work toward the
+        concrete sentence under consideration by repeatedly applying production rules (replacing
+        nonterminals with one of their right-hand sides) until there are no nonterminals left.
+		This method is by far the easiest method, but also places the most restrictions on the
+        grammar.
+
+		Bottom-up parsing starts with the sentence to be parsed (the string of terminals), and
+        repeatedly applies production rules inversely, i.e. replaces substrings of terminals
+        nonterminals with the left-hand side of production rules. This method is more powerful
+        than top-down parsing, but much harder to write by hand. Tools that construct bottom-up
+        parsers from a grammar (\ijargonex{compiler-compilers}{compiler-compiler}) exist for this
+        purpose.
+
+	\section{Top-down Parsing}
+
+		Top-down parsing relies on a grammar's \ijargon{determinism} property to work. A
+        top down or \ijargon{recursive descent} parser always takes the leftmost nonterminal
+        in a \ijargon{sentential form} (or the rightmost nonterminal, depending on the
+        flavor of parser you use) and replaces it with one of its right-hand sides. Which one,
+        depends on the next terminal character the parser reads from the input stream. Because
+        the parser must constantly make choices, it must be able to do so without having to
+        retrace its steps after making a wrong choice. There exist parsers that work this way,
+        but these are obviously not very efficient and we will not give them any further thought.
+
+		If all goes well, eventually all nonterminals will have been replaced with terminals and
+        the input sentence should be readable. If it is not, something went wrong along the way
+        and the input text did not obey the rules of the grammar; it is said to be syntactically
+        incorrect--there were \ijargonex{syntax errors}{syntax error}. We will later see
+        ways to pinpoint the location of syntax errors precisely.
+
+		Incidentally, there is no real reason why we always replace the leftmost (or rightmost)
+        nonterminal. Since our grammar is context-free, it does not matter which nonterminal
+        gets replaced since there is no dependency between the nonterminals (context-insensitive).
+        It is simply tradition to pick the leftmost nonterminal, and hence the name of the
+        collection of recursive descent parsers: \ijargon{LL}, which means ``recognizable
+        while reading from \jargon{left} to right, and rewriting \jargon{leftmost} nonterminals.''
+		We can also define RL right away, which means ``recognizable
+        while reading from \jargon{right} to left, and rewriting \jargon{leftmost} nonterminals.'' --
+		this type of recursive descent parsers would be used in countries where text is read
+		from right to left.
+
+		As an example of top-down parsing, consider the BNF grammar in listing \ref{listing_exp_ll}.
+		This is a simplified version of the mathematical expression grammar, made suitable for
+        LL parsing (the details of that will follow shortly).
+
+	   	\lstset{language=BNF}
+	   	\lstset{style=BNF}
+   		\begin{lstlisting}[float=hbtp, caption={Expression Grammar for LL Parser}, label=listing_exp_ll]
+expression:			factor restexpression.
+restexpression:		[e].
+restexpression:		"+" factor restexpression.
+restexpression:		"-" factor restexpression.
+factor:				"0".
+factor:				"1".
+factor:				"2"
+factor:				"3".
+factor:				"4".
+factor:				"5".
+factor:				"6".
+factor:				"7".
+factor:				"8".
+factor:				"9".
+    	\end{lstlisting}
+	
+		\begin{example}{Top-down Parsing by Hand}{ex_topdown_parsing_by_hand}
+			We will now parse the sentence \code{1 + 2 + 3} by hand, using the top-down
+            approach. A top-down parser always starts with the start symbol, which in this
+            case is \code{expression}. It then reads the first character from the input stream,
+            which happens to be \code{1}, and determines which production rule to apply.
+            Since there is only one producton rule that can replace \code{expression} (it only
+            acts as the left-hand side of one rule), we replace \code{expression} with
+			\code{factor restexpression}:
+
+			\lstset{language=BNF}
+			\lstset{style=BNF}
+			\begin{center}
+			\begin{quote}
+			\begin{tabular}{p{1.6cm}l}
+				expression	& $\Longrightarrow_{L}$ \lstinline$factor restexpression$ \\
+			\end{tabular}
+			\end{quote}
+			\end{center}
+
+			In LL parsing, we always replace the leftmost nonterminal (here, it is
+			\code{factor}). \code{factor} has ten alternative production rules, but know
+            exactly which one to pick, since we have the character \code{1} in memory and there
+            is only one production rule whose right-hand side starts with \code{1}:
+
+			\begin{center}
+			\begin{quote}
+			\begin{tabular}{p{1.6cm}l}
+				expression	& $\Longrightarrow_{L}$ \lstinline$factor restexpression$ \\
+				            & $\Longrightarrow_{L}$ \lstinline$"1" restexpression$ \\
+			\end{tabular}
+			\end{quote}
+			\end{center}
+
+			We have just eliminated one terminal from the input stream, so we read the
+            next one, which is \code{"+"}. The leftmost nonterminal which we need to replace
+            is \code{restexpression}, which has only one alternative that starts with \code{+}:
+
+			\begin{center}
+			\begin{quote}
+			\begin{tabular}{p{1.6cm}l}
+				expression	& $\Longrightarrow_{L}$ \lstinline$factor restexpression$ \\
+				            & $\Longrightarrow_{L}$ \lstinline$"1" restexpression$ \\
+				            & $\Longrightarrow_{L}$ \lstinline$"1" "+" factor restexpression$ \\
+			\end{tabular}
+			\end{quote}
+			\end{center}
+
+			We continue this process until we run out of terminal tokens. The situation at that
+            point is:
+
+			\begin{center}
+			\begin{quote}
+			\begin{tabular}{p{1.6cm}l}
+				expression	& $\Longrightarrow_{L}$ \lstinline$factor restexpression$ \\
+				            & $\Longrightarrow_{L}$ \lstinline$"1" restexpression$ \\
+				            & $\Longrightarrow_{L}$ \lstinline$"1" "+" factor restexpression$ \\
+				            & $\Longrightarrow_{L}$ \lstinline$"1" "+" "2" restexpression$ \\
+				            & $\Longrightarrow_{L}$ \lstinline$"1" "+" "2" "+" factor restexpression$ \\
+				            & $\Longrightarrow_{L}$ \lstinline$"1" "+" "2" "+" factor restexpression$ \\
+				            & $\Longrightarrow_{L}$ \lstinline$"1" "+" "2" "+" "3" restexpression$ \\
+			\end{tabular}
+			\end{quote}
+			\end{center}
+
+			The current terminal symbol under consideration is empty, but we could also use
+			\jargon{end of line} or \ijargon{end of file}. In that case, we see that of the
+            three alternatives for \code{restexpression}, the ones that start with \code{+} and
+            \code{-} are invalid. So we pick the production rule with the empty right-hand side,
+            effectively removing \code{restexpression} from the sentential form. We are now
+            left with the input sentence, having eliminated all the terminal symbols. Parsing
+            was successful.
+
+			If we were to parse \code{1 + 2 * 3} using this grammar, parsing will not be
+			successful. Parsing will fail as soon as the terminal symbol \code{*} is
+            encountered. If the lexical analyzer cannot handle this token, parsing will end
+            for that reason. If it can (which we will assume here), the parser is in the following
+            situation:
+
+			\begin{center}
+			\begin{quote}
+			\begin{tabular}{p{1.6cm}l}
+				expression	& $\Longrightarrow^{*}_{L}$ \lstinline$"1" "+" "2" restexpression$ \\
+			\end{tabular}
+			\end{quote}
+			\end{center}
+
+			The parser must now find a production rule starting with \code{*}. There is none,
+            so it replaces \code{restexpression} with the empty alternative. After that, there
+            are no more nonterminals to replace, but there are still terminal symbols on the
+            input stream, thus the sentence cannot be completely recognized.
+		\end{example}
+
+		There are a couple of caveats with the LL approach. Consider what happens if a nonterminal
+        is replaced by a collection of other nonterminals, and so on, until at some point
+        this collection of nonterminals is replaced by the original nonterminal, while no new
+        terminals have been processed along the way.  This process will then continue indefinitely,
+        because there is no termination condition.  Some grammars cause this behaviour to occur.
+        Such grammars are called \ijargon{left-recursive}.
+		
+		\begin{definition}{Left Recursion}{def_left_recursion}
+			A context-free grammar $(V,\Sigma,S,P)$ is left-recursive if
+
+			\[
+				\exists X \in V, \alpha, \beta \in (V \cup \Sigma)^{*} : S \Longrightarrow^{*} X \alpha \Longrightarrow^{*}_{L} X \beta
+			\]
+
+			in which $\Longrightarrow^{*}_{L}$ is the reflexive transitive closure of $\Longrightarrow_{L}$, defined as:
+
+			\[
+				\{ (u A \tau) \in (V \cup \Sigma)^{*} \times (V \cup \Sigma)^{*} : u \in \Sigma^{*}, \tau \in (V \cup \Sigma)^{*} \land (A,\alpha) \in P \}
+			\]
+
+			The difference between $\Longrightarrow$ and $\Longrightarrow_{L}$ is that
+			the former allows arbitrary strings of terminals and nonterminals to precede the
+			nonterminal that is going to be replaced ($A$), while the latter insists that only
+			terminals occur before $A$ (thus making $A$ the leftmost nonterminal).
+		
+			Equivalently, we may as well define $\Longrightarrow_{R}$:
+
+			\[
+				\{ (\tau A u) \in (V \cup \Sigma)^{*} \times (V \cup \Sigma)^{*} : u \in \Sigma^{*}, \tau \in (V \cup \Sigma)^{*} \land (A,\alpha) \in P \}
+			\]
+
+			$\Longrightarrow_{R}$ insists that $A$ be the rightmost nonterminal, followed only by
+            terminal symbols. Using $\Longrightarrow_{R}$, we are also in a position to define
+            right-recursion (which is similar to left-recursion):
+
+			\[
+				\exists X \in V, \alpha, \beta \in (V \cup \Sigma)^{*} : S \Longrightarrow^{*} \alpha X \Longrightarrow^{*}_{R} \beta X
+			\]
+
+			Grammars which contain left-recursion are not guaranteed to terminated, although
+            they may. Because this may introduce hard to find bugs, it is important to weed out
+            left-recursion from the outset if at all possible.
+		\end{definition}
+
+		Removing left-recursion can be done using \ijargon{left-factorisation}. Consider the
+        following excerpt from a grammar (which may be familiar from the previous chapter):
+
+	    \lstset{language=BNF}
+	    \lstset{style=BNF}
+	    \begin{lstlisting}
+expression:		expression "+" term.
+expression:		expression "-" term.
+expression:		term.
+		\end{lstlisting}
+
+		Obviously, this grammar is left-recursive: the first two production rules both start
+        with \code{expression}, which also acts as their left-hand side. So expression may
+        be replaced with \code{expression} without processing a nonterminal along the way.
+        Let it be clear that there is nothing \jargon{wrong} with this grammar (it will generate
+        valid sentences in the mathematical expression language just fine), it just cannot
+        be recognized by a top-down parser.
+
+		Left-factorisation means recognizing that the nonterminal \code{expression} occurs
+        multiple times as the leftmost symbol in a production rule, and should therefore
+        be in a production rule on its own. Firstly, we swap the order in which \code{term}
+        and \code{expression} occur:
+
+	    \lstset{language=BNF}
+	    \lstset{style=BNF}
+	    \begin{lstlisting}
+expression:		term "+" expression.
+expression:		term "-" expression.
+expression:		term.
+		\end{lstlisting}
+
+		The \code{+} and \code{-} operators are now treated as if they were right-associative,
+        which \code{-} is definitely not. We will deal with this problem later. For now, assume
+        that associativity is not an issue. This grammar is no longer left-recursive, and
+        it obviously produces the same sentences as the original grammar. However,
+		we are not out of the woods yet.
+
+        It turns out that when multiple production rule alternatives start with the same
+        terminal or nonterminal symbol, it is impossible for the parser to choose an alternative
+        based on the token it currently has in memory. This is the situation we have now;
+        three production rules which all start with \code{term}. This is where we apply
+        the left-factorisation: \code{term} may be removed from the beginning of each
+		production rule and placed in a rule by itself. This is called ``factoring out''
+		a nonterminal on the left side, hence \ijargon{left-factorisation}. The result:
+	
+	    \lstset{language=BNF}
+	    \lstset{style=BNF}
+	    \begin{lstlisting}
+expression:		term restexpression.
+restexpression:	"+" term restexpression.
+restexpression:	"-" term restexpression.
+restexpression:	[e].
+		\end{lstlisting}
+
+		Careful study will show that this grammar produces exactly the same sentences as the
+        original one. We have had to introduce a new nonterminal (\code{restexpression}) with
+        an empty alternative to solve the left-recursion, in addition to wrong associativity
+        for the \code{-} operator, so we were not kidding when we said that top-down parsing
+        imposes some restrictions on grammar. On the flipside, writing a parser for such a grammar
+        is a snap.
+
+		So far, we have assumed that the parser selects the production rule to apply based on
+        one terminal symbol, which is has in memory. There are also parsers that work with more
+        than one token at a time. A recursive descent parser which works with 3 tokens is
+        an LL(3) parser. More generally, an LL(k) parser is a top-down parser with a $k$
+		tokens \ijargon{lookahead}.
+
+		\begin{advice}{One Token Lookahead}{advice_onetoken}
+			Do not be tempted to write a parser that uses a lookahead of more than one
+            token. The complexity of such a parser is much greater than the one-token
+            lookahead LL(1) parser, and it will not really be necessary. Most, if not all,
+            language constructs can be parsed using an LL(1) parser.
+		\end{advice}
+
+		We have now found that grammars, suitable for recursive descent parsing, must obey
+        the following two rules:
+
+		\begin{enumerate}
+			\item There most not be left-recursion in the grammar.
+			\item Each alternative production rule with the same left-hand side must start
+				  with a distinct terminal symbol. If it starts with a nonterminal symbol,
+				  examine the production rules for that nonterminal symbol and so on.
+		\end{enumerate}
+
+		We will repeat these definitions more formally shortly, after we have discussed
+        bottom-up parsing and compared it to recursive descent parsing.
+
+
+	\section{Bottom-up Parsing}
+
+		Bottom-up parsers are the inverse of top-down parsers: they start with the
+        full input sentence (string of terminals) and work by replacing substrings of
+        terminals and nonterminals in the sentential form by nonterminals, effectively
+        reversely applying the production rules.
+
+		In de remainder of this chapter, we will focus on top-down parsing only, but
+        we will illustrate the concept of bottom-up parsing (also known as LR) with
+        an example. Consider the grammar in listing \ref{listing_exp_lr}, which is
+        not LL.
+
+	   	\lstset{language=BNF}
+	   	\lstset{style=BNF}
+   		\begin{lstlisting}[float=hbtp, caption={Expression Grammar for LR Parser}, label=listing_exp_lr]
+expression:			expression "+" expression.
+expression:			expression "-" expression.
+expression:			factor.
+factor:				"0".
+factor:				"1".
+factor:				"2"
+factor:				"3".
+factor:				"4".
+factor:				"5".
+factor:				"6".
+factor:				"7".
+factor:				"8".
+factor:				"9".
+    	\end{lstlisting}
+
+		\begin{example}{Bottom-up Parsing by Hand}{ex_bottomup_parsing_by_hand}
+			We will now parse the sentence \code{1 + 2 + 3} by hand, using the bottom-up
+            approach. A bottom-up parser begins with the entire sentence to parse, and
+            replaces groups of terminals and nonterminals with the left-hand side of production
+            rules. In the initial situation, the parser sees the first terminal symbol, \code{1},
+            and decides to replace it with \code{factor} (which is the only possibility). Such a
+			replacement is called a \ijargon{reduction}.
+
+			\lstset{language=BNF}
+			\lstset{style=BNF}
+			\begin{center}
+			\begin{quote}
+			\begin{tabular}{p{1.6cm}l}
+				\lstinline$"1" "+" "2" + "3"$ & $\Longrightarrow$ \lstinline$factor "+" "2" "+" "3"$ \\
+			\end{tabular}
+			\end{quote}
+			\end{center}
+
+			Starting again from the left, the parser sees the nonterminal \code{factor} and
+			decides to replace it with \code{expression} (which is, once again, the only
+			possibility):
+
+			\lstset{language=BNF}
+			\lstset{style=BNF}
+			\begin{center}
+			\begin{quote}
+			\begin{tabular}{p{1.6cm}l}
+				\lstinline$"1" "+" "2" + "3"$ & $\Longrightarrow$ \lstinline$factor "+" "2" "+" "3"$ \\
+				                              & $\Longrightarrow$ \lstinline$expression "+" "2" "+" "3"$ \\
+			\end{tabular}
+			\end{quote}
+			\end{center}
+	
+			There is now no longer a suitable production rule that has a lone \code{expression} on
+			the right-hand side, so the parser reads another symbol from the input stream
+			(\code{+}). Still, there is no production rule that matches the current input.
+			The \ijargonex{tokens}{token} \code{expression} and \code{+} are stored on a stack
+			(\ijargonex{shifted}{shift}) for later reference. The parser reads another symbol
+			from the input, which happens to be \code{2}, which it can replace with
+			\code{factor}, which can in turn be replaced by \code{expression}
+
+			\lstset{language=BNF}
+			\lstset{style=BNF}
+			\begin{center}
+			\begin{quote}
+			\begin{tabular}{p{1.6cm}l}
+				\lstinline$"1" "+" "2" + "3"$ & $\Longrightarrow$ \lstinline$factor "+" "2" "+" "3"$ \\
+				                              & $\Longrightarrow$ \lstinline$expression "+" "2" "+" "3"$ \\
+				                              & $\Longrightarrow$ \lstinline$expression "+" factor "+" "3"$ \\
+				                              & $\Longrightarrow$ \lstinline$expression "+" expression "+" "3"$ \\
+			\end{tabular}
+			\end{quote}
+			\end{center}
+
+			All of a sudden, the first three tokens in the sentential form
+			(\code{expression + expression}), two of which were stored on the stack,
+			form the right hand side of a production rule:
+
+		   	\lstset{language=BNF}
+		   	\lstset{style=BNF}
+	   		\begin{lstlisting}
+expression:			expression "+" expression.
+			\end{lstlisting}
+
+			The parser replaces the three tokens with \code{expression} and continues the process
+			until the situation is thus:
+
+			\lstset{language=BNF}
+			\lstset{style=BNF}
+			\begin{center}
+			\begin{quote}
+			\begin{tabular}{p{1.6cm}l}
+				\lstinline$"1" "+" "2" + "3"$ & $\Longrightarrow$ \lstinline$factor "+" "2" "+" "3"$ \\
+				                              & $\Longrightarrow$ \lstinline$expression "+" "2" "+" "3"$ \\
+				                              & $\Longrightarrow$ \lstinline$expression "+" factor "+" "3"$ \\
+				                              & $\Longrightarrow$ \lstinline$expression "+" expression "+" "3"$ \\
+				                              & $\Longrightarrow$ \lstinline$expression "+" "3"$ \\
+				                              & $\Longrightarrow$ \lstinline$expression "+" factor$ \\
+				                              & $\Longrightarrow$ \lstinline$expression "+" expression$ \\
+				                              & $\Longrightarrow$ \lstinline$expression$ \\
+			\end{tabular}
+			\end{quote}
+			\end{center}
+
+			In the final situation, the parser has reduced the entire original sentence to the
+			start symbol of the grammar, which is a sign that the input text was syntactically
+			correct.
+		\end{example}
+
+		Formally put, the \ijargon{shift-reduce method} constructs a right derivation
+		$S \Longrightarrow^{*}_{R} s$, but in reverse order. This example shows that
+		bottom up parsers can deal with left-recursion (in fact, left recursive
+		grammars make more efficient bottom up parsers), which helps keep grammars
+		simple. However, we stick with top down parsers since they are by far the easiest
+        to write by hand.
+		
+	\section{Direction Sets}
+
+		So far, we have only informally defined which restrictions are placed on a grammar
+		for it to be LL($k$). We will now present these limitations more precisely.
+		We must start with several auxiliary definitions.
+
+		\begin{definition}{FIRST-Set of a Production}{def_pfirst_set}
+			The FIRST set of a production for a nonterminal $A$ is the set of all
+			terminal symbols, with which the strings generated from $A$ can start.
+		\end{definition}
+
+		Note that for an LL($k$) grammar, the first $k$ terminal symbols with which
+		a production starts are included in the FIRST set, as a string. Also note that
+		this definition relies on the use of BNF, not EBNF. It is important
+		to realize that the following grammar excerpt:
+
+	   	\lstset{language=BNF}
+	   	\lstset{style=BNF}
+   		\begin{lstlisting}
+factor:		"0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9".
+		\end{lstlisting}
+
+		actually consists of 10 different production rules (all of which happen
+        to share the same left-hand side). The FIRST set of a production is often
+		denoted PFIRST, as a reminder of the fact that it is the FIRST set of
+		a single Production.
+
+		\begin{definition}{FIRST-Set of a Nonterminal}{def_first_set}
+			The FIRST set of a nonterminal $A$ is the set of all
+			terminal symbols, with which the strings generated from $A$ can start.
+
+			If the nonterminal $X$ has $n$ productions in which it acts as the left-hand
+			side, then
+
+			\[
+				FIRST(X) := \bigcup_{i = 1}^{n} PFIRST(X_{i})
+			\]
+		\end{definition}
+
+		The LL(1) FIRST set of \code{factor} in the previous example
+		is $\{ 0,$ $1,$ $2,$ $3,$ $4,$ $5,$ $6,$ $7,$ $8,$ $9 \}$. Its individual PFIRST sets (per
+		production) are $\{ 0 \}$ through $\{ 9 \}$. We will deal only with LL(1)
+		FIRST sets in this book.
+
+		We also define the FOLLOW set of a nonterminal. FOLLOW sets are determined
+		only for entire nonterminals, not for productions:
+
+		\begin{definition}{FOLLOW-Set of a Nonterminal}{def_follow_set}
+			The FOLLOW set of a nonterminal $A$ is the set of all	
+			terminal symbols, that may follow directly \jargon{after}
+			$A$.
+		\end{definition}
+
+		To illustrate FOLLOW-sets, we need a bigger grammar:
+
+		\begin{example}{FOLLOW-Sets}{ex_follow_set}
+		   	\lstset{language=BNF}
+		   	\lstset{style=BNF}
+	   		\begin{lstlisting}
+expression:		 	  factor restexpression.
+restexpression:		  [e].
+					| "+" factor restexpression
+					| "-" factor restexpression.
+factor:				  "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9".
+	    	\end{lstlisting}
+
+			\noindent{}FOLLOW(expression) = $\{ \perp \}$\footnote{We use $\perp$ to denote end of file.}\\
+			FOLLOW(restexpresson) = $\{ \perp \}$\\
+			FOLLOW(factor) = $\{ \perp, +, - \}$
+		\end{example}
+
+		We are now in a position to formalize the property of unambiguity for LL($k$)
+		grammars:
+
+		\begin{definition}{Unambiguity of LL($k$) Grammars}{def_grammar_unambiguity}
+			A grammar is unambiguous when
+
+			\begin{enumerate}
+				\item If a nonterminal acts as the left-hand side of multiple productions,
+					  then the PFIRST sets of these productions must be disjunct.
+				\item If a nonterminal can produce the empty string ($\epsilon$), then its
+					  FIRST set must be disjunct with its FOLLOW set.
+			\end{enumerate}
+		\end{definition}
+
+		How does this work in practice? The first conditions is easy. Whenever an LL parser
+		reads a terminal, it must decide which production rule to apply. It does this
+        by looking at the first $k$ terminal symbols that each production rule can produce
+		(its PFIRST set). In order for the parser to be able to make the choice, these
+		sets must not have any overlap. If there is no overlap, the grammar is said to be
+		\ijargonex{deterministic}{deterministic grammar}.
+
+		If a nonterminal can be replaced with the empty string, the parser must check whether
+		it is valid to do so. Inserting the empty string is an option when no other rule can be
+		applied, and the nonterminals that come after the nonterminal that will produce the
+		empty string are able to produce the terminal that the parser is currently considering.
+		Hence, to make the decision, the FIRST set of the nonterminal must not have any
+		overlap with its FOLLOW set.
+
+	\section{Parser Code}
+	
+		A wondrous amd most useful property of LL($k$) grammars (henceforth referred to as
+		LL since we will only be working with LL(1) anyway) is that a parser can be written
+		for them in a very straightforward fashion (as long as the grammar is truly LL).
+
+		A top-down parser needs a stack to place its nonterminals on. It it easiest to use
+        the stack offered by the C compiler (or whatever language you work with) for this
+        purpose. Now, for every nonterminal, we produce a function. This function checks
+		that the terminal symbol currently under consideration is an element of the
+		FIRST set of the nonterminal that the function represents, or else it reports
+		a syntax error.
+
+		After a syntax error, the parser may recover from the error using a synchronization
+		approach (see chapter \ref{chap_error} on \ijargon{error recovery} for details)
+		and continue if possible, in order to find more errors.
+		
+		The body of the function reads any terminals that are specified in the production
+		rules for the nonterminal, and calls other functions (that represent other nonterminals)
+		in turn, thus putting frames on the stack. In the next section, we will show that
+		this approach is ideal for construction a syntax tree.
+
+		\lstset{language=BNF}
+		\lstset{style=BNF}
+	    \begin{table} \label{table_logical_pfirst}
+			\begin{center}
+				\begin{tabular}{ll}
+					\tableheader{Production} & \tableheader{PFIRST} \\
+					\hline
+
+\scriptsize\lstinline$program: 			statementlist "RESULT" "=" implication.$\normalsize & $\{ A \ldots Z \}$ \\
+\scriptsize\lstinline$statementlist: 		[e].$\normalsize                                & $\emptyset$ \\
+\scriptsize\lstinline$statementlist: 		statement statementlist.$\normalsize            & $\{ A \ldots Z \}$ \\
+\scriptsize\lstinline$statement: 			identifier "=" implication ";".$\normalsize     & $\{ A \ldots Z \}$ \\
+\scriptsize\lstinline$implication: 		conjunction restimplication.$\normalsize            & $\{ \sim, (, 0, 1, A \ldots Z \}$ \\
+\scriptsize\lstinline$restimplication: 	[e].$\normalsize                                    & $\emptyset$ \\
+\scriptsize\lstinline$restimplication: 	"->"  conjunction restimplication.$\normalsize      & $\{$ \verb|->| $\}$ \\
+\scriptsize\lstinline$restimplication: 	"<-"  conjunction restimplication.$\normalsize      & $\{$ \verb|<-| $\}$ \\
+\scriptsize\lstinline$restimplication: 	"<->" conjunction restimplication.$\normalsize      & $\{$ \verb|<->| $\}$ \\
+\scriptsize\lstinline$conjunction: 		negation restconjunction.$\normalsize               & $\{ \sim, (, 0, 1, A \ldots Z \}$ \\
+\scriptsize\lstinline$restconjunction: 	[e].$\normalsize                                    & $\emptyset$ \\
+\scriptsize\lstinline$restconjunction: 	"&" negation restconjunction.$\normalsize           & $\{ \& \}$ \\
+\scriptsize\lstinline$restconjunction: 	"|" negation restconjunction.$\normalsize           & $\{ \mid \}$ \\
+\scriptsize\lstinline$negation: 			"~" negation.$\normalsize                       & $\{ \sim \}$ \\
+\scriptsize\lstinline$negation: 			factor.$\normalsize                             & $\{ (, 0, 1, A \ldots Z \}$ \\
+\scriptsize\lstinline$factor: 			"(" implication ")".$\normalsize                    & $\{ ( \}$ \\
+\scriptsize\lstinline$factor: 			identifier.$\normalsize                             & $\{ A \ldots Z \}$ \\
+\scriptsize\lstinline$factor: 			"1".$\normalsize                                    & $\{ 1 \}$ \\
+\scriptsize\lstinline$factor: 			"0".$\normalsize									& $\{ 0 \}$ \\
+\scriptsize\lstinline$identifier:       "A".$\normalsize									& $\{ A \}$ \\
+\scriptsize\lstinline$identifier:       "Z".$\normalsize									& $\{ Z \}$ \\
+
+					\hline
+				\end{tabular}
+				\caption{PFIRST Sets for Logic Language}
+			\end{center}
+		\end{table}				
+
+	    \begin{table} \label{table_logical_firstfollow}
+			\begin{center}
+				\begin{tabular}{lll}
+					\tableheader{Nonterminal} & \tableheader{FIRST} & \tableheader{FOLLOW} \\
+					\hline
+program			& $\{ A \ldots Z \}$							& $\{ \perp \}$ \\		
+statementlist   & $\{ A \ldots Z \}$            				& $\{ RESULT \} $ \\
+statement       & $\{ A \ldots Z \}$							& $\{ \sim, (, 0, 1, A \ldots Z, RESULT \}$ \\
+implication     & $\{ \sim, (, 0, 1, A \ldots Z \}$				& $\{ ;, \perp, ) \} $ \\
+restimplication & $\{$ \verb|->|, \verb|<-|, \verb|<->| $\}$	& $\{ ;, \perp, ) \} $ \\
+conjunction     & $\{ \sim, (, 0, 1, A \ldots Z \}$				& $\{ \verb|->|, \verb|<-|, \verb|<->|, ;, \perp, ) \} $ \\
+restconjunction & $\{ \&, \mid \}$								& $\{ \verb|->|, \verb|<-|, \verb|<->|, ;, \perp, ) \} $ \\
+negation		& $\{ \sim, (, 0, 1, A \ldots Z \}$				& $\{ \&, \mid, \verb|->|, \verb|<-|, \verb|<->|, ;, \perp, ) \} $ \\
+factor:			& $\{ (, 0, 1, A \ldots Z \}$				    & $\{ \&, \mid, \verb|->|, \verb|<-|, \verb|<->|, ;, \perp, ) \} $ \\
+identifier:		& $\{ A \ldots Z \}$							& $\{ =, \&, \mid, \verb|->|, \verb|<-|, \verb|<->|, ;, \perp, ) \} $ \\
+					\hline
+				\end{tabular}
+				\caption{FIRST and FOLLOW Sets for Logic Language}
+			\end{center}
+		\end{table}				
+	
+
+		Writing parser code is best illustrated with an (elaborate) example. Please refer
+		to the grammar for the logic language (section \ref{sec_logic_lang}), for which
+		we will write a parser. In table \ref{table_logical_pfirst}, we show the PFIRST
+		set for every individual production, while in table \ref{table_logical_firstfollow},
+		we show the FIRST and FOLLOW sets for every nonterminal. With this information,
+		we can now build the parser. Refer to appendix \ref{appendix:logicparser} for the
+        complete source code (including a lexical analyzer built with \code{flex}). We will
+		discuss the C-function for the nonterminal \code{conjunction} here (shown in
+		listing \ref{listing_conjunction}.
+
+		\lstset{language=Clang}	
+		\lstset{style=Source}
+		\lstset{stepnumber=1}
+		\begin{lstlisting}[float,caption={Conjunction Nonterminal Function}, label=listing_conjunction]
+int conjunction()
+{
+	if( token != '~' && token != '('
+		&& token != IDENTIFIER
+        && token != TRUE
+		&& token != FALSE )
+	{
+		return( ERROR );
+	}
+
+    if( negation() == ERROR )
+	{
+		return( ERROR );
+	}
+
+    if( token == '&' || token == '|' )
+    {
+        return( restconjunction() );
+    }
+	else
+	{
+    	return( OK );
+	}
+}
+		\end{lstlisting}
+
+		The \code{conjunction} function first checks that the current terminal input symbol
+		(stored in the global variable \code{token}) is an element of $FIRST(conjunction)$
+		(lines 3--6). If not, \code{conjunction} returns an error.
+
+		If token is an element of the FIRST set, \code{conjunction} calls negation,which
+        is the first token in the production rule for conjunction (lines 11-14):
+
+		\lstset{language=BNF}
+		\lstset{style=BNF}
+		\begin{lstlisting}
+conjunction: 		negation restconjunction.
+		\end{lstlisting}
+
+		If \code{negation} returns without errors, \code{conjunction} must now decide
+		whether to call \code{restconjunction} (which may produce the empty string). It
+		does so by looking at the current terminal symbol under consideration. If it
+		is a \& or a $\mid$ (both part of $FIRST(restconjunction)$, it calls
+		\code{restconjunction} (lines 16-19). If not, it skips \code{restconjunction}, assuming it
+		produces the empty string.
+
+		The other functions in the parser are constructed using a similar approach. Note that
+		the parser presented here only performs a syntax check; the parser in appendix
+		\ref{appendix:logicparser} also interprets its input (it is an interpreter), which
+        makes for more interesting reading.
+
+       \section{Conclusion}
+        
+        Our discussion of parser construction is now complete. The results of parsing are placing
+        in a syntax tree and passed on to the next phase, semantic analysis.
+
+%	\section{Syntax Trees}
+%		
+		%The parser we discussed in the previous section merely checks that an input text
+        %is syntactically correct (is well-formed). But the parser can do much more: it can
+		%prepare the input for processing by the next stage (semantic analysis). The parser
+		%does so by constructing a syntax tree or parse tree, which was introduced in the
+		%previous chapter. Every function that gets called in the parser becomes a node
+		%in the syntax tree.		
+		
+		
+%	\section{Tree Simplification}
+%	
+		%A syntax tree for any program of some size contains many nodes that add no real value
+		%to the tree. For example, since we handle operator precedence in our grammar, many nodes
+		%serve only as placeholders and may therefore be left out of the tree when parsing is complete.
+		%This is where a \ijargon{tree simplication} algorithm comes in -- an algorithm that 
+		
+		
+
+		
+
+		
+		
+
+		
+
+		
+
+		
+
+		
+
+
+
+
+	
+
+	\begin{thebibliography}{99}
+		\bibitem{parsing_aho}A.V. Aho, R. Sethi, J.D. Ullman: \emph{Compilers: Principles, Techniques and Tools}, Addison-Wesley, 1986.
+		\bibitem{parsing_feldbrugge}F.H.J. Feldbrugge: \emph{Dictaat Vertalerbouw},
+			Hogeschool van Arnhem en Nijmegen, edition 1.0, 2002.
+		\bibitem{parsing_intel_2}Intel: \emph{IA-32 Intel Architecture - Software Developer's Manual - Volume 2: Instruction Set},
+			Intel Corporation, Mt. Prospect, 2001.
+		\bibitem{parsing_lex_yacc}J. Levine: \emph{Lex and Yacc},
+			O'Reilly \& sons, 2000
+       	\bibitem{parsing_meijer}H. Meijer: \emph{Inleiding Vertalerbouw},
+      		University of Nijmegen, Subfaculty of Computer Science, 2002.
+		\bibitem{parsing_pragmatics}M.J. Scott: \emph{Programming Language Pragmatics},
+			Morgan Kaufmann Publishers, 2000.
+		\bibitem{parsing_languages}T. H. Sudkamp: \emph{Languages \& Machines},
+			Addison-Wesley, 2nd edition, 1998.
+		\bibitem{parsing_wirth}N. Wirth: \emph{Compilerbouw}, Academic Service, 1987.
+	\end{thebibliography}
+    
+    

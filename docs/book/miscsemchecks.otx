@@ -1,0 +1,406 @@
+% miscsemchecks.tex
+% Practical Compiler Construction
+% Chapter: Lvalue check
+%
+
+\chapter{Miscellaneous Semantic Checks} \label{chap_misc_semantic_analysis}
+
+	\map{map3miscsem.png}
+
+    \section{Left Hand Values}
+
+	An \jargon{lvalue}, short for \jargon{left hand value},
+	is that expression or identifier reference that can
+	be placed on the left hand side of an assignment. The
+	\ijargon{lvalue check} is one of the necessary checks
+	in the semantic stage. An \jargon{lvalue} check makes
+	sure that no invalid assignments are done in the source
+	code. Examples \ref{ex_invalid_lvalues} and
+	\ref{ex_valid_lvalues} show us what lvalues are valid
+	in the \langname{} compiler and which are not.
+				
+	\begin{example}{Invalid Lvalues}
+	{ex_invalid_lvalues}
+    \lstset{language=Inger}
+    \lstset{style=Source}
+    \begin{lstlisting}[label=listing_misc_invalid_lvalues]		
+    function() = 6;
+    2 = 2;
+    "somestring" = "somevalue";    
+    \end{lstlisting}            
+	\end{example}
+		
+        What makes a valid \jargon{lvalue}? An      
+        \jargon{lvalue} must be a modifiable entity.
+        One can define the invalid \jargon{lvalues}
+        and check for them, in our case it is better to
+        check for the \jargon{lvalues} that \jargon{are}
+        valid, because this list is much shorter.
+                    	   	 
+		\begin{example}{Valid Lvalues}{ex_valid_lvalues}
+        \lstset{language=Inger}
+        \lstset{style=Source}
+        \begin{lstlisting}[label=listing_misc_valid_lvalues]		
+            int a = 6;
+            name = "janwillem";
+		  \end{lstlisting}
+		\end{example} 
+
+	\subsection{Check Algorithm}
+	
+		To check the validity of the \jargon{lvalues} we
+		need a filled \jargon{AST} (\jargon{Abstract
+		Syntax Tree}) in order to have access to the all	
+		elements of the source code. To get a better grasp
+		of the checking algorithm have a look at the pseudo
+		code in example \ref{ex_pseudo_algo}. This algorithm
+		results in a list of error messages if any.
+		
+		\begin{example}{Check Algorithm}{ex_pseudo_algo}
+    \lstset{language=Clang}
+    \lstset{style=Source}
+    \begin{lstlisting}[label=listing_pseudo_check_algo]		
+    Start at the root of the AST
+			
+    for each node found in the AST do
+      if the node is an '=' operator then
+        check its most left child in the AST
+        which is the lvalue and see if this is
+        a valid one.
+
+        if invalid report an error
+
+        else go to next node
+      else go to the next node
+    \end{lstlisting}
+		\end{example}
+
+  	Not all the \jargon{lvalues} are as straightforward as
+  	they seem. A valid but bizarre example of a
+    semantically correct assignment is:
+  	
+  	\begin{example}{Bizarre Assignment}{ex_bizarre_assignment}
+    \lstset{language=Inger}
+    \lstset{style=Source}
+    \begin{lstlisting}[label=listing_misc_bizarre_assignment]		
+    int a[20];
+    int b = 4;
+  	 
+    a = a * b;
+  	\end{lstlisting}
+  	\end{example}
+  	
+  	We choose to make this a valid assignment in \langname{}
+  	and to provide some address arithmetic possibilities.
+  	The code in example \ref{ex_bizarre_assignment} multiplies
+  	the base address by the absolute value of identifier
+  	b. Lets say that the base address of array   	
+  	\jargon{a} was initially \code{0x2FFFFFA0}, then the
+  	base address of \jargon{a} will be \code{0xBFFFFE80}.
+
+    \section{Function Parameters}
+ 
+    This section covers argument count checking. Amongst
+    other things, function parameters must be checked
+    before we actually start generating code. Apart from
+    checking the use of a correct number of function
+    arguments in function calls and the occurence of
+    multiple definitions of the \jargon{main} function,we
+    also check whether the passed arguments are of the
+    correct type. Argument type checking is explained in 
+    \ref{chap_typechecking}
+ 
+    The idea of checking the number of arguments passed to a
+    function is pretty straightforward. The check consists
+    of two steps: firstly, we collect all the function
+    header nodes from the \jargon{AST} and store them in
+    a list. Secondly, we compare the number of arguments
+    used in each function call to the number of arguments
+    required by each function and check that the numbers
+    match.
+ 
+    To build a list of all nodes that are function headers
+    we make a pass through the \jargon{AST} and collect
+    all nodes that are of type \code{NODE\_FUNCTIONHEADER},
+    and put them in a list structure provided by the
+    generic \jargon{list} module. It is faster to go through
+    the \jargon{AST} once and build a list of the
+    \jargon{nodes} we need, than to make a pass through the
+    \jargon{AST} to look for a node each time we need it.
+    After building the list for the example program
+    \ref{ex_headerlist_prog} it will contain the
+    \jargon{header nodes} for the functions \code{main} and
+    \code{AddOne}.
+
+    \begin{example}{Program With Function Headers}{ex_headerlist_prog}
+    \lstset{language=Inger}
+    \lstset{style=Source}
+    \begin{lstlisting}[label=listing_headerlist_program]		
+    module example;
+ 
+    start main : void -> void
+    {
+        AddOne( 2 );
+    }
+ 
+    AddOne : int a -> int
+    {
+        return( a + 1 );
+    }
+    \end{lstlisting}
+    \end{example}
+ 
+    The next step is to do a second pass through the
+    \jargon{AST} and look for \jargon{nodes} of type
+    \code{NODE\_APPLICATION} which represent a function
+    call in the source code. When such a \jargon{node} is
+    found we first retrieve the actual number of arguments
+    passed in the function application with the helper
+    function \code{GetArgumentCountFromApplication}.
+    Secondly we get the number of arguments as defined in
+    the function declaration, to do this we use the
+    function \code{GetArgumentCount}. Then it is just a
+    matter of comparing the number of arguments we expect
+    and the number of arguments we found. We only print an
+    error message when a function was called with too many
+    or few arguments.
+
+    \section{Return Keywords}
+
+    The typechecking mechanism of the \langname{} compiler checks
+    if a function returns the right type when assigning
+    a function return value to a \jargon{variable}.
+
+    \begin{example}{Correct Variable
+    Assignment}{ex_correct_func_assign}
+    \lstset{language=Inger}
+    \lstset{style=Source}
+    \begin{lstlisting}[label=listing_correct_function_assignment]		
+    int a;
+    a = myfunction();
+    \end{lstlisting}
+    \end{example}
+
+    The source code in example
+    \ref{ex_correct_func_assign} is correct and implies
+    that the function \code{myfunction} returns a value. As
+    in most programming languages we introduced a 
+    \jargon{return} keyword in our language and we define the 
+    following semantic rules: \ijargon{unreachable code} and 
+    \ijargon{non-void function returns}
+    (definition \ref{def:unreachablecode}
+    and \ref{def:nonvoidfunctionreturns}).
+
+    \subsection{Unreachable Code}
+ 
+    \begin{definition}{Unreachable code}
+    {def:unreachablecode}
+    \begin{quote}
+        Code after a \code{return} keyword in \langname{}     
+        source will not be executed. A warning for
+        this unreachable code will be generated.
+    \end{quote}
+    \end{definition}
+
+    For this check we run over the \jargon{AST} pre-order
+    and check each \ijargon{code block} for the \ijargon{return}
+    keyword. If the \ijargon{child node} containing the
+    \ijargon{return} keyword is not the last \ijargon{child node}
+    in the \ijargon{code block}, the remaining statements will be
+    unreachable; \ijargon{unreachable code}. An example of
+    \ijargon{unreachable code} can be found in example
+    \ref{ex_unreachable_code} in which function \code{print}
+    takes an \jargon{integer} as parameter and prints this to
+    the screen. The \ijargon{statement} `\code{print( 2 )}' will
+    never be executed since the function \code{main} returns 
+    before the \code{print} function is reached.
+    
+    \begin{example}{Unreachable Code}{ex_unreachable_code}
+    \lstset{language=Inger}
+    \lstset{style=Source}
+    \begin{lstlisting}[label=listing_unreachable_code]		
+    start main : void -> int
+    {
+        int a = 8;
+
+        if( a == 8 )
+        {
+            print( 1 );
+            return( a );
+            print( 2 );
+        }
+    }
+    \end{lstlisting}
+    \end{example}
+    
+    \ijargon{Unreachable code} is, besides useless, not a problem and
+    the compilation process can continue, therefor a \ijargon{warning}
+    messages is printed.
+
+    \subsection{Non-void Function Returns} 
+ 
+    \begin{definition}{Non-void function returns}
+    {def:nonvoidfunctionreturns}
+    \begin{quote}
+        The last statement in a non-void function should be
+        the keyword 'return' in order to return a value. If
+        the last statement in a non-void function is not
+        'return' we generate a warning `control reaches end
+        of non-void function'.
+    \end{quote}
+	  \end{definition}
+ 
+    It is nice that \ijargon{unreachable code} is detected, but it is
+    not essential to the next phase the process of compilation.
+    \ijargon{Non-void function returns}, on the contrary, have
+    a greater impact. Functions that should return a value but never
+    do, can result in an errorneous program. In example 
+    \ref{ex_non-void_function_returns} \jargon{variable} \code{a} is
+    assigned the result value of function \code{myfunction}, but the
+    function \code{myfunction} never returns a value.
+    
+    \begin{example}{Non-void Function Returns}{ex_non-void_function_returns}
+    \lstset{language=Inger}
+    \lstset{style=Source}
+    \begin{lstlisting}[label=listing_non-void_function_returns]
+    module functionreturns;
+    
+    start main : void -> void
+    {
+      int a;
+      a = myfunction();
+    }
+    
+    myfunction : void -> int
+    {
+      int b = 2;
+    }
+    \end{lstlisting}
+    \end{example}
+    
+    To make sure all \ijargonex{non-void function}{non-void functions}
+    return, we check for the \ijargon{return} keyword which should be
+    in the function \ijargon{code block}. Like with most 
+    \jargon{semantic checks} we go through the \ijargon{AST} pre-order
+    and search all function \ijargonex{code block}{code blocks} for the
+    \ijargon{return} keyword. When a function has a 
+    \ijargon{return statement} in an \jargon{if-then-else statement} 
+    both \jargon{then} and \jargon{else}
+    block should contain the \ijargon{return} keyword because the 
+    \jargon{code blocks} are executed conditionally.  The same is for
+    a \ijargon{switch block}, all \ijargonex{case block}{case blocks}
+    should contain a \ijargon{return statement}. All 
+    \ijargonex{non-void function}{non-void functions} without \ijargon{return}
+    keyword will generate a warning.
+    
+    \section{Duplicate Cases}
+   
+    Generally a \ijargon{switch statement} has one or more 
+    \ijargonex{case blocks}{case block}. It is syntactically 
+    correct to define multiple \ijargonex{code blocks}{code block} 
+    with the same \ijargon{case value}, so-called 
+    \ijargonex{duplicate case values}{duplicate case value}.
+    If \ijargon{duplicate case values} occur it might not be clear
+    which \ijargon{code block} is executed, this is a choice which
+    you should make as a compiler builder. The \ijargon{semantic check} in
+    \langname{} generates a warning when a \ijargon{duplicate case value}
+    is found and generates code for the first \ijargon{case} code block.
+    We choose to generate a \ijargon{warning} instead of an \ijargon{error}
+    message because the multi-value construction still allows us to go
+    to the next phase in compilation; \ijargon{code generation}.
+    Example program \ref{ex_duplicate_case_values}, will have the output
+    
+    \begin{quote}
+        \code{This is the first code block}
+    \end{quote}
+
+    because we choose to generate code for the first \ijargon{code block}
+    definition for \ijargon{duplicate case value} \code{0}.
+
+    \begin{example}{Duplicate Case Values}{ex_duplicate_case_values}
+    \lstset{language=Inger}
+    \lstset{style=Source}
+    \begin{lstlisting}[label=listing_duplicate_case_values]		
+    %!DUPCASES
+    \end{lstlisting}
+    \end{example}
+   
+    The algorithm that checks for \ijargonex{duplicate case values}{duplicate case value}
+    is pretty simple and works recursively down the \ijargon{AST}.
+    It starts at the \ijargon{root node} of the \ijargon{AST} and 
+    searches for \code{NODE\_SWITCH} \jargon{nodes}. For each 
+    \ijargon{switch node} found we search for duplicate 
+    \ijargon{children} in the \code{cases} block. If
+    any \ijargon{duplicates} were found, generate a proper
+    \ijargon{warning}, else continue until the complete
+    \ijargon{AST} was searched. In the end this check will
+    detect all \ijargon{duplicate values} and report them.
+ 
+    \section{Goto Labels}
+
+		In the \langname{} language we implemented the \jargon{goto statement}
+		although use of this statement is often considered harmful.
+		Why exactly	\jargon{is} \code{goto} considered harmful? As the
+		late Edsger Dijkstra (\cite{miscsem_GotoConsideredHarmful}) stated:
+		
+		\begin{quote}
+		  \emph{The go to statement as it stands is just too primitive; 
+		  it is too much an invitation to make a mess of one's program}
+    \end{quote}
+ 	
+		Despite its possible harmfulness we decided to implement it. Why? 
+		Because it \jargon{is} a very cool feature. For the unaware \langname{} 
+		programmer we added a subtle reminder to the keyword \ijargon{goto} 
+		and implemented it as \code{goto\_considered\_harmful}.
+		 	
+		As with using \jargon{variables}, \ijargon{goto labels} should be
+		declared before using them. Since this pre-condition cannot be
+		forced using grammar rules (syntax) it should be checked in the 
+		semantic stage. Due to a lack of time we did \jargon{not} implement
+		this semantic check and therefore programmers and users of the
+		\langname{} compiler should be aware that jumping to undeclared
+		\ijargonex{goto labels}{goto label} may result in inexplicable
+		and possibly undesired program behaviour. Example code 
+		\ref{ex_correct_goto_statement} shows the correct way to use the
+		\code{goto} keyword.
+		
+		\begin{example}{Goto Usage}{ex_correct_goto_statement}
+    \lstset{language=Inger}
+    \lstset{style=Source} 
+    \begin{lstlisting}[label=listing_correct_goto_statement]				
+    %!GOTO 
+    \end{lstlisting}
+		\end{example}
+		
+    A good implementation for this check would be, to store the
+    \ijargon{label} declarations in the \ijargon{symbol table} 
+    and walk through the \ijargon{AST} and search for 
+    \ijargonex{goto statements}{goto statement}. The identifier
+    in a \ijargon{goto statement} like
+
+    \begin{quote}
+    \lstset{language=Inger}
+    \lstset{style=Source} 
+    \begin{lstlisting}[label=listing_correct_goto_statement2]				
+    goto_considered_harmful labelJumpHere
+    \end{lstlisting}
+    \end{quote}
+		
+    will be looked up in the \ijargon{symbol table}. If the
+    \ijargon{goto label} is not found, an \ijargon{error message}
+    will be generated. Although \ijargon{goto} is a very cool
+    feature, be careful using it.
+		
+				 	
+  	\begin{thebibliography}{99}
+    \bibitem{miscsem_PragmaticProgrammer}A. Hunt, D. Thomas:
+    \emph{The Pragmatic Programmer}, Addison Wesley, 2002
+    
+    \bibitem{miscsem_LanguagesAndMachines} Thomas A. Sudkamp:
+    \emph{Languages And Machines} Second Edition,
+    Addison Wesley, 1997
+    
+    \bibitem{miscsem_GotoConsideredHarmful} Edsger W. Dijkstra:
+    \emph{Go To Statement Considered Harmful}\\
+    http://www.acm.org/classics/oct95/
+    \end{thebibliography}		

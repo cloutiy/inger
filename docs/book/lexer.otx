@@ -1,0 +1,962 @@
+% lexer.tex
+% Practical Compiler Construction
+% Chapter: Lexical Analyzer
+
+
+\chapter{Lexical Analyzer}
+
+	\map{map2lexer.png}
+    
+    \section{Introduction}
+    %Introduce the concept of a lexer.
+
+		The first step in the compiling process involves reading source 
+		code, so that the compiler can check that source code for errors 
+		before translating it to, for example, assembly language. 
+		All programming languages provide an array of keywords, like 
+		\code{IF}, \code{WHILE}, \code{SWITCH} and so on. A compiler 
+		is not usually interested in the individual characters that 
+		make up these keywords; these keywords are said to be atomic. 
+		However, in some cases the compiler does care about the individual 
+		characters that make up a word: an integer number 
+		(e.g. \code{12345}), a string (e.g. \code{"hello, world"}) and a 
+		floating point number (e.g. \code{12e-09}) are all considered 
+		to be words, but the individual characters that make them up 
+		are significant.
+	
+		This distinction requires special processing of the input text, 
+		and this special processing is usually moved out of the parser 
+		and placed in a module called the \ijargon{lexical analyzer}, or 
+		\ijargon{lexer} or \ijargon{scanner} for short. It is the lexer's 
+		responsibility to divide the input stream into \ijargonex{tokens}{token}
+		(atomic words). The parser (the module that deals with groups 
+		of tokens, checking that their order is valid) requests a token 
+		from the lexer, which reads characters from the input stream 
+		until it has accumulated enough characters to form a complete 
+		token, which it returns to the parser.
+
+		\begin{example}{Tokenizing}{example:tokenizing}
+			Given the input 
+			\begin{quote}
+				\code{the quick brown fox jumps over the lazy dog}
+			\end{quote}
+			a lexer will split this into the tokens 
+			\begin{quote}
+				\code{the}, \code{quick}, \code{brown}, 
+				\code{fox}, \code{jumps}, \code{over}, 
+				\code{the}, \code{lazy} and \code{dog}
+			\end{quote}
+		\end{example}
+		
+		The process of splitting input into tokens is called 
+		\ijargon{tokenizing} or \ijargon{scanning}. Apart from tokenizing a sentence, a lexer 
+		can also divide tokens up into classes. This is process is called \ijargon{screening}.
+		Consider the following example:
+	
+		\begin{example}{Token Classes}{example:tokenclasses}
+			Given the input
+			\begin{quote}
+				\code{the sum of 2 + 2 = 4.}
+			\end{quote}
+			a lexer will split this into the following tokens, with classes:
+			\begin{quote}
+                \begin{verbatim}
+				Word:   the
+				Word:   sum
+				Word:   of
+				Number: 2
+				Plus:   +
+				Number: 2
+				Equals: =
+				Number: 4
+				Dot:    .
+			    \end{verbatim}
+            \end{quote}
+		\end{example}
+	
+		Some token classes are very narrow (containing only one token), 
+		while others are broad. For example, the token class \code{Word}
+		is used to represent \code{the}, \code{sum} and \code{of}, while 
+		the token class \code{Dot} can only be used when a \code{.} is 
+		read. Incidentally, the lexical analyzer must know how to 
+		separate individual tokens.  In program source text, keywords 
+		are usually separated by whitespace (spaces, tabs and line feeds). 
+		However, this is not always the case. Consider the following input:
+		
+		\begin{example}{Token Separation}{example:tokenseparation} 
+			Given the input
+			\begin{quote}
+				\verb|sum=(2+2)*3;|
+			\end{quote}
+			a lexer will split this into the following tokens:
+			\begin{quote}
+				\verb|sum|, \verb|=|, \verb|(|, \verb|2|, \verb|+|,
+				\verb|2|,   \verb|)|, \verb|*|, \verb|3| and \verb|;|
+			\end{quote}
+		\end{example}
+		
+		Those familiar with popular programming languages like C 
+		or Pascal may know that mathematical tokens like numbers, 
+		\verb|=|, \verb|+| and \verb|*| are not required to be separated 
+		from each other by whitespace. The lexer must have some way to 
+		know when a token ends and the next token (if any) begins. In 
+		the next section, we will discuss the theory of regular languages 
+		to further clarify this point and how lexers deal with it.
+	
+		Lexers have an additional interesting property: they can be used 
+		to filter out input that is not important to the parser, so that 
+		the parser has less different tokens to deal with. Block comments 
+		and line comments are examples of uninteresting input.
+		
+		A token class may represent a (large) collection of values. The token
+		class \code{OP\_MULTIPLY}, representing the multiplication operator
+		\verb|*| contains only one token (\verb|*|), but the token class
+		\code{LITERAL\_INTEGER} can represents the collection of all integers.
+		We say that \code{2} is an integer, and so is \code{256}, \code{381}
+		and so on. A compiler is not only interested in the fact that
+		a token is a literal integer, but also in the value of that literal
+		integer. This is why tokens are often accompanied by a 
+		\ijargon{token value}. In the case of the number \code{2}, the token
+		could be \code{LITERAL\_INTEGER} and the token value could be \code{2}.
+		
+		Token values can be of many types: an integer number token has a token value
+		of type integer, a floating point number token has a token value of type
+		\code{float} or \code{double}, and a string token has a token value of type 
+		\code{char *}.  Lexical analyzers therefore often store token values using
+		a \ijargon{union} (a C construct that allows a data structure to map fields
+		of different type on the same memory, provided that only one of these
+		fields is used at the same time).
+		
+	\section{Regular Language Theory}
+	%This section explains all theory for regular languages in order
+	%to introduce the lexer regexps.
+
+		The lexical analyzer is a submodule of the parser. While the 
+		parser deals with \ijargonex{context-free grammars}{context-free grammar}
+		(a higher level of abstraction), the lexer deals with 
+		individual characters which  form tokens (words). Some tokens 
+		are simple (\code{IF} or \code{WHILE}) while others are complex. 
+		All integer numbers, for example, are represented using the same token
+		(\code{INTEGER}), which covers many cases (\code{1}, \code{100}, 
+		\code{5845} and so on). This requires some notation to match all 
+		integer numbers, so they are treated the same.
+	
+		The answer lies in realizing that the collection of integer 
+		numbers is really a small language, with very strict rules 
+		(it is a so-called \ijargon{regular language}). Before we can show
+		what regular languages are, we must must discuss some preliminary
+		definitions first.
+	
+	    A language is a set of rules that says which sentences can be generated
+	    by stringing together elements of a certain \ijargon{alphabet}. An alphabet
+	    is a collection of symbols (or entire words) denoted as $\Sigma$. The
+	    set of all strings that can be generated from an alphabet is denoted
+	    $\Sigma^{*}$. A language over an alphabet $\Sigma$ is a subset 
+	    of $\Sigma^{*}$. 
+		
+		We now define, without proof, several operations that may be 
+		performed on languages. The first operation on languages that
+		we present is the binary \emph{concatenation} operation.
+		
+		\begin{definition}{Concatenation operation}{def:languageconcatenation}
+			Let $X$ and $Y$ be two languages. Then $XY$ is 
+			the concatenation of these languages, so that:
+			\begin{center}
+				$XY = \{uv\ |\ u \in X\ \land\ v \in Y\}$.
+			\end{center}
+		\end{definition}
+		
+		Concatenation of a language with itself is also possible and
+		is denoted $X^{2}$. Concatenation of a string can also be 
+		performed multiple times, e.g. $X^{7}$.	
+		We will illustrate the definition of concatenation with an example.
+		
+		\begin{example}{Concatenation operation}{example:languageconcatenation}
+			  Let $\Sigma$ be the alphabet $\{a, b, c\}$.
+			\\Let $X$ be the language over $\Sigma$ with $X = \{aa, bb\}$.
+			\\Let $Y$ be the language over $\Sigma$ with $Y = \{ca, b\}$.
+			\\Then $XY$ is the language $\{aaca,aab,bbca,bbb\}$.
+		\end{example}
+		
+		The second operation that will need to define regular languages
+		is the binary \ijargon{union} operation.
+		
+		\begin{definition}{Union operation}{def:languageunion}
+			Let $X$ and $Y$ be two languages. Then $X \cup Y$ is the 
+			union of these languages with
+			\begin{center}
+				$X \cup Y = \{u\ |\ u \in X\ \lor\ u \in Y\}$.
+			\end{center}		
+		\end{definition}
+		
+		Note that the priority of concatenation is higher than the priority
+		of union. Here is an example that shows how the union operation 
+		works:
+	
+		\begin{example}{Union operation}{example:languageunion}
+		  Let $\Sigma$ be the alphabet $\{a, b, c\}$.
+		\\Let $X$ be the language over $\Sigma \{aa, bb\}$.
+		\\Let $Y$ be the language over $\Sigma \{ca, b\}$.
+		\\Then $X \cup Y$ is the language over $\Sigma \{aa, bb, ca, b\}$.
+		\end{example}
+		
+		The final operation that we need to define is the unary 
+		\ijargon{Kleene star} operation.\footnote{The mathematician 
+		Stephen Cole Kleene was born in 
+		1909 in Hartford, Connecticut. His research was on the theory 
+		of algorithms and recursive functions. According to Robert Soare,
+		``From the 1930's on Kleene more than any other mathematician 
+		developed the notions of computability and effective process in 
+		all their forms both abstract and concrete, both mathematical and 
+		philosophical. He tended to lay the foundations for an area and 
+		then move on to the next, as each successive one blossomed into a 
+		major research area in his wake.'' Kleene died in 1994.}
+
+		\begin{definition}{Kleene star}{def:languagekleenestar}
+			Let $X$ be a language. Then
+			\begin{equation}
+				X^{*} = \bigcup_{i=0}^{\infty} X^{i}
+			\end{equation}
+		\end{definition}
+		
+		Or, in words: $X^{*}$ means that you can take 0 or 
+		more sentences from $X$ and concatenate them. The Kleene star 
+		operation is best clarified with an example.
+		
+		\begin{example}{Kleene star}{example:languagekleenestar}
+		  Let $\Sigma$ be the alphabet $\{a, b\}$.
+		\\Let $X$ be the language over $\Sigma \{aa, bb\}$.
+		\\Then $X^{*}$ is the language $\{\lambda, aa, bb, aaaa, 
+		  aabb, bbaa, bbbb, \ldots\}$. 
+		\end{example}
+		
+		There is also an extension to the Kleene star. $XX^{*}$ may 
+		be written $X^{+}$, meaning that at least one string from $X$
+		must be taken (whereas $X^{*}$ allows the empty string $\lambda$).
+		
+		With these definitions, we can now give a definition for a 
+		regular language.
+			
+		\begin{definition}{Regular languages}{def:regularlanguage}
+		    %Required space to stop enumerate from starting 
+		    %right after definition:
+			\ 
+			\begin{enumerate}
+				\item Basis: $\emptyset$, $\{\lambda\}$ and $\{a\}$ 
+				      are regular languages.
+				\item Recursive step: Let X and Y be regular languages. 
+				      Then
+				\begin{quote}
+					$X \cup Y$ is a regular language
+					\\$XY$ is a regular language
+					\\$X^{*}$ is a regular language
+				\end{quote}
+			\end{enumerate}
+		\end{definition}
+		
+		Now that we have established what regular languages are, it is
+		important to note that lexical analyzer generators (software tools
+		that will be discussed below) use \ijargonex{regular expressions}{regular expression}
+		to denote regular languages. Regular expressions are merely
+		another way of writing down regular languages. In regular 
+		expressions, it is customary to write the language consisting 
+		of a single string composed	of one word, $\{a\}$, as \mbold{a}.
+		
+		\begin{definition}{Regular expressions}{def:regularexpressions}
+		    Using recursion, we can define regular expressions as follows:
+			\begin{enumerate}
+				\item Basis: \mbold{\emptyset}, \mbold{\lambda} and
+					  \mbold{a} are regular expressions.
+				\item Recursive step: Let X and Y be regular expressions. 
+				      Then
+				\begin{quote}
+					$X \cup Y$ is a regular expression
+					\\$XY$ is a regular expression
+					\\$X^{*}$ is a regular expression
+				\end{quote}
+			\end{enumerate}
+		\end{definition}
+		
+		As you can see, the definition of regular expressions differs
+		from the definition of regular languages only by a notational
+		convenience (less braces to write).
+	
+		So any language that can be composed of other regular languages or
+		expressions using concatenation, union, and the Kleene star, is also 
+		a regular language or expression. Note that the priority of the 
+		concatenation, Kleene Star and union operations are listed here
+		from highest to lowest priority.
+		
+		\begin{example}{Regular Expression}{example:sample_regular_expression} 
+	    	Let \mbold{a} and \mbold{b} be regular expressions by 
+	    	definition \ref{def:regularexpressions}(1). Then 
+	    	\mbold{ab} is a regular expression by definition 
+	    	\ref{def:regularexpressions}(2) through concatenation. 
+	    	(\mbold{ab} $\cup$ \mbold{b}) is a regular expression 
+	    	by definition \ref{def:regularexpressions}(2) through union. 
+	    	(\mbold{ab} $\cup$ \mbold{b})$^{*}$ is a regular expression 
+	    	by definition \ref{def:regularexpressions}(2) through union.
+			The sentences that can be generated by 
+			\mbox{(\mbold{ab} $\cup$ \mbold{b})$^{*}$} are 
+			$\{\lambda, ab, b, abb, bab, babab, \ldots\}$.
+		\end{example}
+	
+		While context-free grammars are normally denoted using production
+		rules, for regular languages it is sufficient to use the easy
+		to read regular expressions. 
+		
+	\section{Sample Regular Expressions}
+	%This section gives some sample regular expressions (non-UNIX).
+	
+		In this section, we present a number of sample regular expressions
+		to illustrate the theory presented in the previous section. From now
+		on, we will now longer use bold \mbold{a} to denote $\{a\}$, 
+		since we will soon move to UNIX regular expressions which do not
+		use bold either.
+		
+		\begin{quote}
+			\begin{tabular}{lp{6cm}}
+				\tableheader{Regular expression} & \tableheader{Sentences generated}\\
+				\hline
+				$q$					& the sentence $q$\\
+				$qqq$				& the sentence $qqq$\\
+				$q^{*}$				& all sentences of 0 or more $q$'s\\
+				$q^{+}$				& all sentences of 1 or more $q$'s\\
+				$q \cup \lambda$    & the empty sentence or $q$. Often denoted as $q?$ (see UNIX regular expressions).\\
+				$b^{*}((b^{+}a \cup \lambda)b^{*}$ & the collection of sentences that begin with 0 or more $b$'s, followed by either one or more $b$'s followed by an $a$, or nothing, followed by 0 or more $b$'s.\\
+			\end{tabular}
+		\end{quote}
+		
+		These examples show that through repeated application of 
+		definition \ref{def:regularexpressions}, complex sequences can
+		be defined. This feature of regular expressions is used for
+		constructing lexical analyzers.
+
+	\section{UNIX Regular Expressions}
+	%This section explains the syntax for UNIX regexps.
+
+		Under UNIX, several extensions to regular expressions have been 
+		implemented that we can use. A UNIX regular expression\cite{lexer_regex}
+		is commonly called a \ijargon{regex} (multiple: \jargon{regexes}).
+		
+		There is no union operator on UNIX.	Instead, we supply a list of 
+		alternatives contained within square brackets.
+	    
+	    \begin{quote}
+			\code{[abc]}	$\equiv (a \cup b \cup c)$
+		\end{quote}
+	
+		To avoid having to type in all the individual letters when we 
+		want to match all lowercase letters, the following syntax is 
+		allowed:
+	
+		\begin{quote}
+			\code{[a-z]} $\equiv$ \code{[abcdefghijklmnopqrstuvwxyz]}
+		\end{quote}
+	
+		UNIX does not have a $\lambda$ either. Here is the alternative 
+		syntax:
+	
+		\begin{quote}
+			\code{a?} $\equiv a \cup \lambda$
+		\end{quote}
+		
+		Lexical analyzer \emph{generators} allow the user to directly specify 
+		these regular expressions in order to identify lexical tokens 
+		(atomic words that string together to make sentences). We will 
+		discuss such a generator program shortly.
+	
+	\section{States} \label{sec:states}
+	%This section discusses the lexer as a state machine.
+
+		With the theory of regular languages, we can now find out how a
+		lexical analyzer works. More specifically, we can see how the 
+		scanner can divide the input \code{(34+12)} into separate tokens.
+	
+		Suppose the programming language for which we wish to write a
+		scanner consists only of sentences of the form 
+		\code{(}\emph{number}\code{+}\emph{number}\code{)}. Then we require the following 
+		regular expressions to define the tokens.
+	    
+	    \begin{quote}
+	    	\begin{tabular}{ll}
+	    		\tableheader{Token} & \tableheader{Regular expression}\\
+	    		\hline
+	    		\code{(}	  	& \code{(}\\
+	    		\code{)}	  	& \code{)}\\
+	    		\code{+}	  	& \code{+}\\
+	    		\emph{number}   & \code{[0-9]+}\\
+	    	\end{tabular}
+	    \end{quote}
+	    
+		A lexer uses states to determine which characters it can expect,
+		and which may not occur in a certain situation. For simple tokens
+		(\code{(}, \code{)} and \code{+}) this is easy: either one of
+		these characters is read or it is not. For the \emph{number} token, 
+		states are required.
+	
+		As soon as the first digit of a number is read, the lexer enters
+		a state in which it expects more digits, and nothing else. 
+		If another digit is read, the lexer remains in this state and
+		adds the digit to the token read so far. It something else (not
+		a digit) is read, the lexer knows the \emph{number} token is 
+		finished and leaves the \emph{number} state, returning the token
+		to the caller (usually the parser). After that, it tries to 
+		match the unexpected character (maybe a \code{+}) to another token. 
+	
+		\begin{example}{States}{example:states} 
+	    	Let the input be \code{(34+12)}. The lexer starts out in
+	    	the \emph{base} state. For every character 
+	    	read from the input, the following table shows the state 
+	    	that the lexer is currently in and the action it performs.
+	    \end{example}
+	    
+	    \begin{quote}
+	    		\begin{tabular}{lll}
+		   		  \tableheader{Token read} & \tableheader{State} & \tableheader{Action taken}\\
+	    			\hline
+	    			\code{(}    &   \emph{base}		& Return \code{(} to caller\\
+	    			\code{3}	&	\emph{base}		& Save \code{3}, enter \emph{number} state\\
+	    			\code{4}    &	\emph{number}	& Save \code{4}\\
+	    			\code{+}	&	\emph{number}	& \code{+} not expected. Leave
+	    			                                  \emph{number}\\
+	    			 			&                   & state and return 
+	    			                                  \code{34} to caller\\
+					\code{+}	&   \emph{base}		& Return \code{+} to caller\\    				    			\code{1}	&	\emph{base}		& Save \code{1}, enter \emph{number} state\\
+	    			\code{2}	&	\emph{number}	& Save \code{2}\\
+	    			\code{)}	&	\emph{number}	& \code{)} unexpected. Leave	    											                  \emph{number}\\
+	    			            &                   & state and return \code{12} to caller\\
+    			    \code{)}	&	\emph{base}		& return \code{)} to caller\\	    					\end{tabular}
+	    \end{quote}
+		
+		This example did not include whitespace (spaces, line feeds and tabs)
+		on purpose, since it tends to be confusing. Most scanners ignore 
+		spacing by matching it with a special regular expression and doing 
+		nothing.
+	
+		There is another rule of thumb used by lexical analyzer generators
+		(see the discussion of this software below): they always try to
+		return the longest token possible. 
+	
+		\begin{example}{Token Length}{example:tokenlength}
+			\code{=} and \code{==} are both tokens. Now if \code{=} was read
+			and the next character is also \code{=} then \code{==} will be
+			returned instead of two times \code{=}. 
+		\end{example}
+		
+		In summary, a lexer determines which characters are valid in the
+		input at any given time through a set of states, on of which is
+		the active state. Different states have different valid characters
+		in the input stream. Some characters cause the lexer to shift
+		from its current state into another state.
+	
+	\section{Common Regular Expressions}
+	%This section shows some common regexps for integers,
+	%floating point numbers, strings and comments.
+	
+		This section discusses some commonly used regular expressions for
+		interesting tokens, such as strings and comments.
+		
+		\subsubsection{Integer numbers}
+		An integer number consists of only digits. It ends when a
+		non-digit character is encountered. The scanner must watch
+		out for an overflow, e.g. \mbox{\code{12345678901234}} does not fit
+		in most programming languages' type systems and should cause
+		the scanner to generate an overflow error.
+	
+		The regular expression for integer numbers is
+	
+		\begin{quote}
+			\verb|[0-9]+|
+		\end{quote}
+	
+		This regular expression generates the collection of strings
+		containing at least one digit, and nothing but digits.
+	
+		\begin{advice}{Lexer Overflow}{advice:lexeroverflow}
+		If the scanner generates an overflow or similar error, 
+		parsing of the source code can continue (but no target code 
+		can be generated). The scanner can just replace the faulty 
+		value with a correct one, e.g. ``\code{1}''.
+		\end{advice}
+	
+		\subsubsection{Floating point numbers}
+		Floating point numbers have a slightly more complex syntax 
+		than integer numbers. Here are some examples of floating 
+		point numbers:
+	
+		\begin{quote}
+			\code{1.0}, \code{.001}, \code{1e-09}, \code{.2e+5}
+		\end{quote}
+	
+		The regular expression for floating point numbers is:
+	
+		\begin{quote}
+			\verb|[0-9]* . [0-9]+ ( e [+-] [0-9]+ )?|
+		\end{quote}
+	
+		Spaces were added for readability. These are not part of the
+		generated strings. The scanner should check each of the 
+		subparts of the regular expression containing digits for 
+		possible overflow. 
+	
+		\begin{advice}{Long Regular Expressions}{advice:longregexps}
+		If a regular expression becomes long or too complex, it is 
+		possible to split it up into multiple regular expressions. 
+		The lexical analyzer's internal state machine will still work.
+		\end{advice}
+	
+		\subsubsection{Strings}
+		Strings are a token type that requires some special processing 
+		by the lexer. This should become clear when we consider the 
+		following sample input:
+	
+		\begin{quote}
+			\verb|"3+4"|
+		\end{quote}
+	
+		Even though this input consists of numbers, and the \code{+} 
+		operator, which may have regular expressions of their own, 
+		the entire expression should be returned to the caller 
+		since it is contained within double quotes. The trick to do 
+		this is to introduce another state to the lexical analyzer, 
+		called an \ijargon{exclusive state}. When in this state, the 
+		lexer will process only regular expressions marked with this state. 
+		The resulting regular expressions are these:
+	
+		\begin{quote}
+			\begin{tabular}{lp{6cm}}
+				\tableheader{Regular expression} & \tableheader{Action}\\
+				\hline
+				\verb|"|				& Enter \emph{string} state\\
+				\emph{string} \verb|.|	& Store character. A dot (\verb|.|) means anything. This regular expression is only considered when the lexer is in the \emph{string} state.\\
+				\emph{string} \verb|"|	& Return to previous state. Return string contents to caller. This regular expression is only considered when the lexer is in the \emph{string} state.\\
+			\end{tabular}
+		\end{quote}
+	
+		\begin{advice}{Exclusive States}{advice:exlusivestates}
+		You can write code for exclusive states yourself (when writing
+		a lexical analyzer from scratch), but AT\&T lex and GNU flex
+		can do it for you.
+		\end{advice}
+	
+		The regular expressions proposed above for strings do not heed
+		line feeds. You may want to disallow line feeds within strings,
+		though. Then you must add another regular expressions that
+		matches the line feed character ($\backslash$n in some languages) 
+		and generates an error when it is encountered within a string.
+	
+		The lexer writer must also be wary of a buffer overflow; if 
+		the program source code consists of a \verb|"| and hundreds of 
+		thousands of letters (at least, not another \verb|"|), a compiler
+		that does not check for buffer overflow conditions will 
+		eventually crash for lack of memory. Note that you could 
+		match strings using a single regular expression:
+	    
+	    \begin{quote}
+			\verb|"(.)*"|
+		\end{quote}
+	
+		but the state approach makes it much easier to check for buffer
+		overflow conditions since you can decide at any time whether the
+		current character must be stored or not.
+	
+		\begin{advice}{String Limits}{advice:stringlimit}
+		To avoid a buffer overflow, limit the string length to about 
+		\mbox{64 KB} and generate an error if more characters are read. 
+		Skip all the offending characters until another \verb|"| is read 
+		(or end of file).
+		\end{advice}
+	
+		\subsubsection{Comments}
+		Most compilers place the job of filtering comments out of
+		the source code with the lexical analyzer. We can therefore
+		create some regular expressions that do just that. This once
+		again requires the use of an exclusive state. In 
+		programming languages, the beginning and end of comments
+		are usually clearly marked:
+	
+		\begin{quote}	
+			\begin{tabular}{ll}
+				\tableheader{Language} & \tableheader{Comment style}\\
+				\hline
+				C				& \verb|/* comment */|\\
+				C++				& \verb|// comment (line feed)|\\
+				Pascal			& \verb|{ comment }|\\
+				BASIC			& \verb|REM comment :|\\
+			\end{tabular}
+		\end{quote}
+	
+		We can build our regular expressions around these delimiters.
+		Let's build sample expressions using the C comment delimiters:
+	    
+	    \begin{quote}
+	    	\begin{tabular}{lp{6cm}}
+	    		\tableheader{Regular expression} & \tableheader{Action}\\
+	    		\hline
+	    		\verb|/*|		& Enter \emph{comment} state\\
+	    		\emph{comment} \verb|.|	  & Ignore character. A dot (\verb|.|) means anything. This regular expression is only considered when the lexer is in the \emph{comment} state.\\
+	    		\emph{comment} \verb|*/|  & Return to previous state. Do not return to caller but read next token, effectively ignoring the comment. This regular expression is only considered when the lexer is in the \emph{comment} state.\\
+	    	\end{tabular}
+	    \end{quote}
+	
+		Using a minor modification, we can also allow nested comments. To 
+		do this, we must have the lexer keep track of the comment 
+		nesting level. Only when the nesting level reaches 0 after 
+		leaving the final comment should the lexer leave the \emph{comment}
+		state. Note that you could handle comments using a single regular
+		expression:
+	
+		\begin{quote}
+			\verb|/* (.)* */|
+		\end{quote}
+	
+		But this approach does not support nested comments.	The treatment of 
+		line comments is slightly easier. Only one regular expression is 
+		needed:
+		
+		\begin{quote}
+			\verb|//(.)*\n|
+		\end{quote}
+	
+	\section{Lexical Analyzer Generators}
+	%This section discusses lexer generators, and introduces
+	%Flex.
+
+		Although it is certainly possible to write a lexical analyzer 
+		by hand, this task becomes increasingly complex as your 
+		input language gets richer. It is therefore more practical 
+		use a lexical analyzer generator. The code generated by such 
+		a generator program is usually faster and more efficient that 
+		any code you might write by hand\cite{lexer_lex_yacc}.
+	
+		Here are several candidates you could use:
+		
+		\begin{quote}
+			\begin{tabular}{lp{6cm}}
+				AT\&T lex			& Not free, ancient, UNIX and Linux implementations\\
+				GNU flex			& Free, modern, Linux implementation\\
+				Bumblebee lex		& Free, modern, Windows implementation\\
+			\end{tabular}
+		\end{quote}
+	
+		The \emph{\langname} compiler was constructed using GNU flex; in the
+		next sections we will briefly discuss its syntax (since flex takes
+		lexical analyzer specifications as its input) and how to use the
+		output flex generates.
+		
+		\begin{advice}{Lex}{}
+			We heard that some people think that a lexical analyzer must be written
+			in \code{lex} or \code{flex} in order to be called a \jargon{lexer}.
+			Of course, this is blatant nonsense (it is the other way around).
+		\end{advice}
+	
+		\subsubsection{Flex syntax}
+		The layout of a flex input file (extension \verb|.l|) is, in 
+		pseudocode:
+		
+		\begin{verbatim}
+            %{
+                Any preliminary C code (inclusions, defines) that 
+                will be pasted in the resulting .C file
+            %}
+            Any flex definitions
+            %%
+            Regular expressions
+            %%
+            Any C code that will be appended to 
+            the resulting .C file
+		\end{verbatim}
+			
+		When a regular expression matches some input text, the 
+		lexical analyzer must execute an action. This usually involves
+		informing the caller (the parser) of the token class found. 
+		With an action included, the regular expressions take the 
+		following form:
+	    
+	    \begin{verbatim}	
+            [0-9]+	{
+                        intValue_g = atoi( yytext );
+                        return( INTEGER );
+                    }
+	  	\end{verbatim}
+	
+		Using \verb|return( INTEGER )|, the lexer informs the caller 
+		(the parser) that is has found an integer. It can only return one
+		item (the token class) so the actual value of the integer is
+		passed to the parser through the global variable \verb|intValue_g|.
+		Flex automatically stores the characters that make up the current
+		token in the global string \verb|yytext|.
+	    
+	    \subsubsection{Sample flex input file}
+	
+		Here is a sample flex input file for the language that consists
+		of sentences of the form 
+		\verb|(|\emph{number}\verb|+|\emph{number}\verb|)|, 
+		and that allows spacing anywhere (except within tokens).
+	    
+	    \begin{verbatim}
+        %{
+            #define NUMBER 1000
+            int intValue_g;
+        %}
+        %%
+        "("         { return( `(` ); }
+        ")"         { return( `)' ); }
+        "+"         { return( `+' ); }
+        [0-9]+      { 
+                        intValue_g = atoi( yytext );
+                        return( NUMBER );
+                    }
+        %%
+        int main()
+        {
+            int result;
+            while( ( result = yylex() ) != 0 )
+            {
+                printf( "Token class found: %d\n", result );
+            }    
+            return( 0 );
+        }
+		\end{verbatim}
+		
+		For many more examples, consult J. Levine's \emph{Lex and yacc}
+		\cite{lexer_lex_yacc}.  
+		
+	\section{\langname{} Lexical Analyzer Specification}
+	%This section contains a listing of token categories,
+	%regular expressions for complex tokens, and listings of
+	%all tokens in Inger.
+	
+		As a practical example, we will now discuss the token
+		categories in the \emph{\langname} language, and all
+		regular expressions used for complex tokens. The full
+		source for the \emph{\langname} lexer is included in 
+		appendix \ref{appendix:lexersource}.
+		
+		\langname{} discerns several token categories: keywords (\code{IF},
+		\code{WHILE} and so on), operators (\verb|+|, \verb|%|
+		and more), complex tokens (integer numbers, floating point
+		numbers, and strings), delimiters (parentheses, brackets)
+		and whitespace. 
+		
+		We will list the tokens in each category and show which
+		regular expressions is used to match them.
+		
+		\subsubsection{Keywords}
+		
+		\langname{} expects all keywords (sometimes called 
+		\ijargonex{reserved words}{reserved word}) to be written 
+		in lowercase, allowing the literal keyword to be used to 
+		match the keyword itself. The following table illustrates this:
+		
+		\ \\\begin{tabular}{lll}
+			\tableheader{Token}	& \tableheader{Regular Expression} & 
+			  \tableheader{Token identifier}\\
+			\hline
+			break		& \code{break}	 	& \verb|KW_BREAK|\\
+			case		& \code{case}		& \verb|KW_CASE|\\
+			continue	& \code{continue}	& \verb|KW_CONTINUE|\\
+			default		& \code{default}	& \verb|KW_DEFAULT|\\
+			do			& \code{do}			& \verb|KW_DO|\\
+			else		& \code{else}		& \verb|KW_ELSE|\\
+			false		& \code{false}		& \verb|KW_FALSE|\\
+			goto\_considered	& \verb|goto_considered| & \\
+			\ \_harmful  & \ \verb|_harmful| & \verb|KW_GOTO|\\
+			if			& \code{if}			& \verb|KW_IF|\\
+			label		& \code{label}		& \verb|KW_LABEL|\\
+			module		& \code{module}		& \verb|KW_MODULE|\\
+			return		& \code{return}		& \verb|KW_RETURN|\\
+			start		& \code{start}		& \verb|KW_START|\\
+			switch		& \code{switch}		& \verb|KW_SWITCH|\\
+			true		& \code{true}		& \verb|KW_TRUE|\\
+			while		& \code{while}		& \verb|KW_WHILE|\\
+		\end{tabular}
+		
+		\subsubsection{Types}
+		
+		Type names are also tokens. They are invariable and
+		can therefore be matched using their full name.
+		
+		\ \\\begin{tabular}{lll}
+			\tableheader{Token} & \tableheader{Regular Expression} & \tableheader{Token identifier}\\
+			\hline
+			bool		& \code{bool}	 	& \verb|KW_BOOL|\\
+			char		& \code{char}		& \verb|KW_CHAR|\\
+			float   	& \code{float}   	& \verb|KW_FLOAT|\\
+			int    		& \code{int}	    & \verb|KW_INT|\\
+			untyped     & \code{untyped}	& \verb|KW_UNTYPED|\\
+		\end{tabular}
+		
+		\ \\Note that the \ijargon{untyped} type is equivalent to
+		\code{void} in the C language; it is a polymorphic
+		type. One or more reference symbols (\verb|*|)
+		must be added after the \code{untyped} keyword. For instance,
+		the declaration
+		
+		\begin{quote}
+			\code{untyped ** a;}
+		\end{quote}
+		
+		declares $a$ to be a double polymorphic pointer.
+		
+		\subsubsection{Complex tokens}
+		\langname{}'s complex tokens variable identifiers, 
+		integer literals, floating point literals and character
+		literals.
+		
+		\ \\\begin{tabular}{lll}
+			\tableheader{Token}	& \tableheader{Regular Expression} & \tableheader{Token identifier}\\
+			\hline
+			integer literal & \verb|[0-9]+|	 	& \code{INT}\\
+			identifier  & \verb|[_A-Za-z][_A-Za-z0-9]*| 	& \code{IDENTIFIER}\\
+			float   	& \verb|[0-9]*\.[0-9]+([eE][\+-][0-9]+)?|  	& \code{FLOAT}\\
+			char		& \verb|\'.\'|	& \code{CHAR}\\
+		\end{tabular}
+		
+		\subsubsection{Strings}
+		In \langname{}, strings cannot span multiple lines. Strings 
+		are read using and exlusive lexer \emph{string}	state. This
+		is best illustrated by some \code{flex} code:
+		
+        \begin{verbatim}
+        \"                  { BEGIN STATE_STRING; }
+        <STATE_STRING>\"    { BEGIN 0; return( STRING ); }
+        <STATE_STRING>\n    { ERROR( "unterminated string" ); }
+        <STATE_STRING>.     { (store a character) }
+        <STATE_STRING>\\\"  { (add " to string)   }
+		\end{verbatim}
+		
+		If a linefeed is encountered while reading a string,
+		the lexer displays an error message, since strings may
+		not span lines. Every character that is read while in
+		the string state is added to the string, except \verb|"|,
+		which terminates a string and causes the lexer to leave
+		the exclusive \verb|string| state. Using the \verb|\"|
+		control code, the programmer can actually add the \code{"}
+		(double quotes) character to a string.
+		
+		\subsubsection{Comments}
+		\langname{} supports two types of comments: line comments
+		(which are terminated by a line feed) and block comments
+		(which must be explicitly terminated). Line comments can
+		be read (and subsequently skipped) using a single regular
+		expression:
+		
+		\begin{quote}
+			\verb|"//"[^\n]*|
+		\end{quote}
+		
+		whereas block comments need an exclusive lexer state (since
+		they can also be nested). We illustrate this again using
+		some \code{flex} code:
+		
+		\begin{verbatim}
+        /*                    { BEGIN STATE_COMMENTS; 
+                                ++commentlevel; }
+        <STATE_COMMENTS>"/*"  { ++commentlevel; }
+        <STATE_COMMENTS>.     { }
+        <STATE_COMMENTS>\n    { }
+        <STATE_COMMENTS>"*/"  { if( --commentlevel == 0 ) 
+                                BEGIN 0; }
+		\end{verbatim}
+		
+		Once a comment is started using \verb|/*|, the lexer sets the
+		comment level to 1 and enters the comment state. The comment  
+		level is increased every time a \verb|/*| is encountered, and 
+		decreased every time a \verb|*/| is read. While in comment
+		state, all characters but the comment start and end
+		delimiters are discarded. The lexer leaves the comment
+		state after the last comment block terminates.
+		
+		\subsubsection{Operators}
+		\langname{} provides a large selection of operators, of varying
+		priority. They are listed here in alphabetic order of
+		the token identifiers. This list includes only atomic
+		operators, not operators that delimit their argument on
+		both sides,	like function application.
+		
+		\begin{quote}
+			\emph{funcname} \verb|(| \emph{expr[,expr...]} \verb|)| 
+		\end{quote}
+		
+		or array indexing
+		
+		\begin{quote}
+			\emph{arrayname} \verb|[| \emph{index} \verb|]|.
+		\end{quote}
+		
+		In the next section, we will present a list of all
+		operators (including function application and array
+		indexing) sorted by priority.
+		
+		Some operators consist of multiple characters. The lexer
+		can discern between the two by looking one character ahead
+		in the input stream and switching states (as explained in
+		section \ref{sec:states}.
+		
+		\ \\\begin{tabular}{lll}
+			\tableheader{Token} & \tableheader{Regular Expression} & \tableheader{Token identifier}\\
+			\hline
+			addition	& \verb|+|			& \verb|OP_ADD|\\
+			assignment	& \verb|=|			& \verb|OP_ASSIGN|\\
+			bitwise and & \verb|&|			& \verb|OP_BITWISE_AND|\\
+			bitwise complement & \verb|~|   & \verb|OP_BITWISE_COMPLEMENT|\\
+			bitwise left shift & \verb|<<|	& \verb|OP_BITWISE_LSHIFT|\\
+			bitwise or  & \verb+|+          & \verb|OP_BITWISE_OR|\\
+			bitwise right shift & \verb|>>| & \verb|OP_BITWISE_RSHIFT|\\
+			bitwise xor	& \verb|^|			& \verb|OP_BITWISE_XOR|\\
+			division	& \verb|/|			& \verb|OP_DIVIDE|\\
+			equality	& \verb|==|			& \verb|OP_EQUAL|\\
+			greater than & \verb|>|			& \verb|OP_GREATER|\\
+			greater or equal & \verb|>=|	& \verb|OP_GREATEREQUAL|\\
+			less than   & \verb|<|			& \verb|OP_LESS|\\
+			less or equal & \verb|<=|		& \verb|OP_LESSEQUAL|\\
+			logical and	& \verb|&&|			& \verb|OP_LOGICAL_AND|\\
+			logical or	& \verb+||+			& \verb|OP_LOGICAL_OR|\\
+			modulus		& \verb|%|			& \verb|OP_MODULUS|\\
+			multiplication & \verb|*|		& \verb|OP_MULTIPLY|\\
+			logical negation & \verb|!|		& \verb|OP_NOT|\\
+			inequality 	& \verb|!=|			& \verb|OP_NOTEQUAL|\\
+			subtract	& \verb|-|			& \verb|OP_SUBTRACT|\\
+			ternary if	& \verb|?|			& \verb|OP_TERNARY_IF|\\
+		\end{tabular}
+		
+		\lbr{}Note that the \verb|*| operator is also used for dereferencing
+		(in unary form) besides multiplication, and the \verb|&| operator
+		is also used for indirection besides bitwise and.
+		
+		\subsubsection{Delimiters}
+		
+		\langname{} has a number of delimiters. There are listed here
+		by there function description.
+		
+		\ \\\begin{tabular}{lll}
+			\tableheader{Token}	& \tableheader{Regexp} & \tableheader{Token identifier}\\
+			\hline
+			precedes function return type & \verb|->|		& \code{ARROW}\\
+			start code block & \verb|{|		& \code{LBRACE}\\
+			end code block & \verb|}|		& \code{RBRACE}\\
+			begin array index	& \verb|[|		& \code{LBRACKET}\\
+			end array index	& \verb|]|		& \code{RBRACKET}\\
+			start function parameter list  & \verb|:|		& \code{COLON}\\
+			function argument separation & \verb|,|		& \code{COMMA}\\
+			expression priority, function application & \verb|(|		& \code{LPAREN}\\
+			expression priority, function application & \verb|)|	& \code{RPAREN}\\
+			statement terminator & \verb|;|		& \code{SEMICOLON}\\
+		\end{tabular}
+		
+	The full source to the \langname{} lexical analyzer is included
+	in appendix \ref{appendix:lexersource}.
+	
+	\begin{thebibliography}{99}
+		\bibitem{lexer_advcourse}G. Goos, J. Hartmanis: \emph{Compiler Construction - An Advanced Course},
+ 			Lecture Notes in Computer Science, Springer-Verlag, Berlin, 1974.
+		\bibitem{lexer_lex_yacc}J. Levine: \emph{Lex and Yacc},
+			O'Reilly \& sons, 2000
+		\bibitem{lexer_regex}H. Spencer: \emph{POSIX 1003.2 regular
+			expressions}, UNIX man page regex(7), 1994
+	\end{thebibliography}
+	
+	
+	

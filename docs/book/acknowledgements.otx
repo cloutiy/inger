@@ -1,0 +1,33 @@
+% acknowledgements.otx
+
+\begin{center}
+\textbf{Acknowledgements}
+\end{center}
+
+\begin{quote}
+The authors would like to extend their gratitude to a number of people
+who were invaluable in the conception and writing of this book. The
+compiler construction project of which this book is the result was 
+started with the help of Frits Feldbrugge and Robert Holwerda. The Inger 
+language was named after Inger Vermeir (in the good tradition of naming
+languages after people, like Ada). The project team was coordinated by
+Marco Devillers, who proved to be a valuable source of
+advice.
+
+We would also like to thank Carola Doumen for her help in structuring
+the project and coordinating presentations given about the project.
+Cees Haaring helped us getting a number of copies of the book printed.
+
+Furthermore, we thank Mike Wertman for letting us study his source of a
+Pascal compiler written in Java, and Hans Meijer of the University of
+Nijmegen for his invaluable compiler construction course.
+
+Finally, we would like to thank the University of Arnhem and Nijmegen
+for letting us use a project room and computer equipment for as long
+as we wanted.
+\end{quote}
+
+
+ 
+	    
+               

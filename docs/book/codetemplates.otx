@@ -1,0 +1,852 @@
+% codetemplates.otx
+% Practical Compiler Construction
+% Chapter: Code Generation
+
+
+\chapter{Code Templates}
+
+	  \map{map4templates.png}
+
+    This final chapter of the book serves as a repository of code templates.
+    These templates are used by the compiler to generate code for common
+    (sub) expressions. Every template has a name and will be treated on
+    the page ahead, each template on a page of its own.
+    
+
+
+\begin{codetemplate}{Addition}
+    \begin{ctinger}
+        \begin{lstlisting}
+expr + expr        
+        \end{lstlisting}
+    \end{ctinger}
+
+    \begin{ctexample}
+        \begin{lstlisting}
+3 + 5      
+        \end{lstlisting}
+    \end{ctexample}
+    
+    \begin{ctasm}
+    		\begin{enumerate}
+    			\item The left expression is evaluated and stored in \code{eax}.
+    			\item \lstinline$movl %eax, %ebx$
+        	\item The right expression is evaluated and stored in \code{eax}.
+					\item \lstinline$addl %ebx, %eax$
+        \end{enumerate}
+    \end{ctasm}
+    
+    \begin{ctdesc}
+        The result of the left expression is added to the result of the right
+        expression and the result of the addition is stored in \code{eax}.
+    \end{ctdesc}
+\end{codetemplate}
+
+
+    
+\begin{codetemplate}{Subtraction}
+    \begin{ctinger}
+        \begin{lstlisting}
+expr - expr        
+        \end{lstlisting}
+    \end{ctinger}
+
+    \begin{ctexample}
+        \begin{lstlisting}
+8 - 3      
+        \end{lstlisting}
+    \end{ctexample}
+    
+    \begin{ctasm}
+    		\begin{enumerate}
+    			\item Left side of expression is evaluated and stored in \code{eax}.
+    			\item \lstinline$movl %eax, %ebx$
+        	\item Right side of expression is evaluated and stored in eax.
+					\item \lstinline$subl %ebx, %eax$
+        \end{enumerate}
+    \end{ctasm}
+    
+    \begin{ctdesc}
+    		The result of the right expression is subtracted from the result of 
+    		the left expression and the result of the subtraction is stored in \code{eax}.
+    \end{ctdesc}
+\end{codetemplate}
+
+
+
+\begin{codetemplate}{Multiplication}
+    \begin{ctinger}
+        \begin{lstlisting}
+expr * expr        
+        \end{lstlisting}
+    \end{ctinger}
+
+    \begin{ctexample}
+        \begin{lstlisting}
+12 - 4      
+        \end{lstlisting}
+    \end{ctexample}
+    
+    \begin{ctasm}
+    		\begin{enumerate}
+    		  \item Left side of expression is evaluated and stored in \code{eax}.
+          \item \lstinline$movl %eax, %ebx$
+          \item Right side of expression is evaluated and stored in \code{eax}.
+          \item \lstinline$imul %ebx$
+        \end{enumerate}
+    \end{ctasm}
+    
+    \begin{ctdesc}
+        The result of the left expression is multiplied with the result of the 
+        right expression and the result of the multiplication is stored in \code{eax}.
+    \end{ctdesc}
+\end{codetemplate}
+    
+
+
+\begin{codetemplate}{Division}
+    \begin{ctinger}
+        \begin{lstlisting}
+expr / expr        
+        \end{lstlisting}
+    \end{ctinger}
+
+    \begin{ctexample}
+        \begin{lstlisting}
+32 / 8      
+        \end{lstlisting}
+    \end{ctexample}
+    
+    \begin{ctasm}
+    		\begin{enumerate}
+    		    \item Left side of expression is evaluated and stored in \code{eax}.
+            \item \lstinline$movl %eax, %ebx$
+            \item Right side of expression is evaluated and stored in \code{eax}.
+            \item \lstinline$xchgl %eax, %ebx$
+						\item \lstinline$xorl %edx, %edx$
+            \item \lstinline$idiv %ebx$
+        \end{enumerate}
+    \end{ctasm}
+    
+    \begin{ctdesc}
+        The result of the left expression is divided by the result of the right
+        expression and the result of the division is stored in \code{eax}.
+    \end{ctdesc}
+\end{codetemplate}
+
+
+
+\begin{codetemplate}{Modulus}
+    \begin{ctinger}
+        \begin{lstlisting}
+expr % expr        
+        \end{lstlisting}
+    \end{ctinger}
+
+    \begin{ctexample}
+        \begin{lstlisting}
+14 % 3      
+        \end{lstlisting}
+    \end{ctexample}
+    
+    \begin{ctasm}
+    		\begin{enumerate}
+						\item Left side of expression is evaluated and stored in \code{eax}.
+            \item \lstinline$movl %eax, %ebx$
+            \item Right side of expression is evaluated and stored in \code{eax}.
+            \item \lstinline$xchgl %eax, %ebx$
+		        \item \lstinline$xorl %edx, %edx$
+            \item \lstinline$idiv %ebx$
+            \item \lstinline$movl %edx, %eax$
+        \end{enumerate}
+    \end{ctasm}
+    
+    \begin{ctdesc}
+        The result of the left expression is divided by the result of the right
+        expression and the remainder of the division is stored in \code{eax}.
+    \end{ctdesc}
+\end{codetemplate}
+
+
+
+\begin{codetemplate}{Negation}
+    \begin{ctinger}
+        \begin{lstlisting}
+-expr
+        \end{lstlisting}
+    \end{ctinger}
+
+    \begin{ctexample}
+        \begin{lstlisting}
+-10
+        \end{lstlisting}
+    \end{ctexample}
+    
+    \begin{ctasm}
+    		\begin{enumerate}
+            \item Expression is evaluated and stored in \code{eax}.
+            \item \lstinline$neg %eax$
+        \end{enumerate}
+    \end{ctasm}
+    
+    \begin{ctdesc}
+        The result of the expression is negated and stored
+        in the \code{eax} register.
+    \end{ctdesc}
+\end{codetemplate}
+
+
+\begin{codetemplate}{Left Bitshift}
+    \begin{ctinger}
+        \begin{lstlisting}
+expr << expr
+        \end{lstlisting}
+    \end{ctinger}
+
+    \begin{ctexample}
+        \begin{lstlisting}
+256 << 2
+        \end{lstlisting}
+    \end{ctexample}
+    
+    \begin{ctasm}
+    		\begin{enumerate}
+    		    \item Left side of expression is evaluated and stored in \code{eax}.
+            \item \lstinline$movl %eax, %ecx$
+            \item Right side of expression is evaluated and stored in \code{eax}.
+            \item \lstinline$xchgl %eax, %ecx$
+            \item \lstinline$sall %cl, %eax$
+        \end{enumerate}
+    \end{ctasm}
+    
+    \begin{ctdesc}
+        The result of the left expression is shifted n bits to the left,
+        where n is the result of the right expression.  The result is stored
+        in the \code{eax} register.
+    \end{ctdesc}
+\end{codetemplate}
+
+
+
+\begin{codetemplate}{Right Bitshift}
+    \begin{ctinger}
+        \begin{lstlisting}
+expr >> expr
+        \end{lstlisting}
+    \end{ctinger}
+
+    \begin{ctexample}
+        \begin{lstlisting}
+16 >> 2
+        \end{lstlisting}
+    \end{ctexample}
+    
+    \begin{ctasm}
+    		\begin{enumerate}
+    		    \item Left side of expression is evaluated and stored in \code{eax}.
+            \item \lstinline$movl %eax, %ecx$
+            \item Right side of expression is evaluated and stored in \code{eax}.
+            \item \lstinline$xchgl %eax, %ecx$
+            \item \lstinline$sarl %cl, %eax$
+        \end{enumerate}
+    \end{ctasm}
+    
+    \begin{ctdesc}
+        The result of the left expression is shifted n bits to the right,
+        where n is the result of the right expression.  The result is stored
+        in the \code{eax} register.
+    \end{ctdesc}
+\end{codetemplate}
+
+
+
+\begin{codetemplate}{Bitwise And}
+    \begin{ctinger}
+        \begin{lstlisting}
+expr & expr
+        \end{lstlisting}
+    \end{ctinger}
+
+    \begin{ctexample}
+        \begin{lstlisting}
+255 & 15
+        \end{lstlisting}
+    \end{ctexample}
+    
+    \begin{ctasm}
+    		\begin{enumerate}
+    		    \item Left side of expression is evaluated and stored in \code{eax}.
+            \item \lstinline$movl %eax, %ebx$
+            \item Right side of expression is evaluated and stored in \code{eax}.
+            \item \lstinline$andl %ebx, %eax$
+        \end{enumerate}
+    \end{ctasm}
+    
+    \begin{ctdesc}
+        The result of an expression is subject to a \jargon{bitwise and} 
+        operation with the  result of another expression and this is 
+        stored in the \code{eax} register.
+    \end{ctdesc}
+\end{codetemplate}
+
+
+
+\begin{codetemplate}{Bitwise Or}
+    \begin{ctinger}
+        \begin{lstlisting}
+expr | expr
+        \end{lstlisting}
+    \end{ctinger}
+
+    \begin{ctexample}
+        \begin{lstlisting}
+13 | 22
+        \end{lstlisting}
+    \end{ctexample}
+    
+    \begin{ctasm}
+    		\begin{enumerate}
+    		    \item Left side of expression is evaluated and stored in \code{eax}.
+            \item \lstinline$movl %eax, %ebx$
+            \item Right side of expression is evaluated and stored in \code{eax}.
+            \item \lstinline$orl %ebx, %eax$
+        \end{enumerate}
+    \end{ctasm}
+    
+    \begin{ctdesc}
+        The result of an expression is subject to a \jargon{bitwise or} 
+        operation with the  result of another expression and this is 
+        stored in the \code{eax} register.
+    \end{ctdesc}
+\end{codetemplate}
+
+
+
+\begin{codetemplate}{Bitwise Xor}
+    \begin{ctinger}
+        \begin{lstlisting}
+expr ^ expr
+        \end{lstlisting}
+    \end{ctinger}
+
+    \begin{ctexample}
+        \begin{lstlisting}
+63 ^ 31
+        \end{lstlisting}
+    \end{ctexample}
+    
+    \begin{ctasm}
+    		\begin{enumerate}
+    		    \item Left side of expression is evaluated and stored in \code{eax}.
+            \item \lstinline$movl %eax, %ebx$
+            \item Right side of expression is evaluated and stored in \code{eax}.
+            \item \lstinline$andl %ebx, %eax$
+        \end{enumerate}
+    \end{ctasm}
+    
+    \begin{ctdesc}
+        The result of an expression is subject to a \jargon{bitwise xor} 
+        operation with the  result of another expression and this is 
+        stored in the \code{eax} register.
+    \end{ctdesc}
+\end{codetemplate}
+
+
+
+\begin{codetemplate}{If-Then-Else}
+    \begin{ctinger}
+        \begin{lstlisting}
+if( expr )
+{
+    // Code block
+}
+// The following part is optional
+else
+{
+   // Code block
+}
+        \end{lstlisting}
+    \end{ctinger}
+
+    \begin{ctexample}
+        \begin{lstlisting}
+int a = 2;
+if( a == 1 )
+{
+    a = 5;
+}
+else
+{
+    a = a - 1;
+}
+        \end{lstlisting}
+    \end{ctexample}
+    
+    \begin{ctasm}
+        When there is only a \jargon{then} block:
+    		\begin{enumerate}
+    		    \item Expression is evaluated and stored in \code{eax}.
+    		    \item \lstinline*cmpl $0, %eax*
+    		    \item \lstinline*je .LABEL0*
+    		    \item \jargon{Then} code block is generated.
+    			  \item \lstinline*.LABEL0:*
+        \end{enumerate}
+        
+        When there is an \jargon{else} block:
+    		\begin{enumerate}
+    		    \item Expression is evaluated and stored in \code{eax}.
+    		    \item \lstinline*cmpl $0, %eax*
+    		    \item \lstinline*je .LABEL0*
+    		    \item \jargon{Then} code block is generated.
+    		    \item \lstinline*jmp .LABEL1*
+    		    \item \lstinline*.LABEL0:*
+    		    \item \jargon{Else} code block is generated.
+    			  \item \lstinline*.LABEL1:*
+        \end{enumerate}
+    \end{ctasm}
+    
+    \begin{ctdesc}
+        This template describes an \jargon{if-then-else} construction.  The conditional code
+        execution is realized with conditional jumps to labels.  Different templates 
+        are used for \jargon{if-then} and \jargon{if-then-else} constructions.
+    \end{ctdesc}
+\end{codetemplate}
+
+
+
+\begin{codetemplate}{While Loop}
+    \begin{ctinger}
+        \begin{lstlisting}
+while( expr ) do
+{
+    // Code block
+}
+        \end{lstlisting}
+    \end{ctinger}
+
+    \begin{ctexample}
+        \begin{lstlisting}
+int i = 5;
+while( i > 0 ) do
+{
+    i = i - 1;
+}
+        \end{lstlisting}
+    \end{ctexample}
+    
+    \begin{ctasm}
+    		\begin{enumerate}
+    		    \item Expression is evaluated and stored in \code{eax}.
+    		    \item \lstinline*.LABEL0:*
+    		    \item \lstinline*cmpl $0, %eax*
+      		  \item \lstinline*je .LABEL1*
+      		  \item Code block is generated
+      		  \item \lstinline*jmp .LABEL0*
+        \end{enumerate}
+    \end{ctasm}
+    
+    \begin{ctdesc}
+        This template describes a \jargon{while} loop.  The expression is evaluated and 
+        while the result of the expression is true the code block is executed.
+    \end{ctdesc}
+\end{codetemplate}
+
+
+
+\begin{codetemplate}{Function Application}
+    \begin{ctinger}
+        \begin{lstlisting}
+func( arg1, arg2, argN );
+        \end{lstlisting}
+    \end{ctinger}
+
+    \begin{ctexample}
+        \begin{lstlisting}
+printInt( 4 );
+        \end{lstlisting}
+    \end{ctexample}
+    
+    \begin{ctasm}
+        \begin{enumerate}
+            \item The expression of each argument is evaluated, stored in \code{eax},
+                  and pushed on the stack.
+    		    \item \lstinline*movl %ebp, %ecx*
+      		  \item The location on the stack is determined.
+      		  \item \lstinline*call printInt* (in this example the function name is printInt)
+      		  \item The number of bytes used for the arguments is calculated.
+      		  \item \lstinline*addl $4, %esp* (in this example the number of bytes is 4)
+        \end{enumerate}
+    \end{ctasm}
+    
+    \begin{ctdesc}
+        This template describes the application of a function.  The arguments are pushed
+        on the stack according to the C style function call convention.
+    \end{ctdesc}
+\end{codetemplate}
+
+
+
+\begin{codetemplate}{Function Implementation}
+    \begin{ctinger}
+        \begin{lstlisting}
+func: type ident1, type ident2, type identN -> returntype
+{
+    // Implementation
+}
+        \end{lstlisting}
+    \end{ctinger}
+
+    \begin{ctexample}
+        \begin{lstlisting}
+square: int i -> int
+{
+    return( i * i );
+}
+        \end{lstlisting}
+    \end{ctexample}
+    
+    \begin{ctasm}
+        \begin{enumerate}
+    		    \item \lstinline*.globl square* (in this example the function name is square)
+    		    \item \lstinline*    .type square, @function*
+    		    \item \lstinline*square:*
+    		    \item \lstinline*    pushl %ebp*
+    		    \item \lstinline*    movl %esp, %ebp*
+    		    \item The number of bytes needed for the parameters are counted here.
+    		    \item \lstinline*    subl $4, %esp* (in this example the number of bytes needed is 4)
+    		    \item The implementation code is generated here.
+    		    \item \lstinline*    leave*
+    		    \item \lstinline*    ret*
+        \end{enumerate}
+    \end{ctasm}
+    
+    \begin{ctdesc}
+        This template describes implementation of a function.  The number of bytes
+        needed for the parameters is calculated and subtracted from the \code{esp}
+        register to allocate space on the stack.
+    \end{ctdesc}
+\end{codetemplate}
+
+
+
+\begin{codetemplate}{Identifier}
+    \begin{ctinger}
+        \begin{lstlisting}
+identifier
+        \end{lstlisting}
+    \end{ctinger}
+
+    \begin{ctexample}
+        \begin{lstlisting}
+i
+        \end{lstlisting}
+    \end{ctexample}
+    
+    \begin{ctasm}
+        For a global variable:
+    		\begin{enumerate}
+    		    \item Expression is evaluated and stored in \code{eax}
+    		    \item \lstinline*movl i, %eax* (in this example the name of the identifier is i)
+    		\end{enumerate}
+    		
+    		For a local variable:
+    		\begin{enumerate}
+    		    \item \lstinline*movl %ebp, %ecx*
+      		  \item The location on the stack is determined
+      		  \item \lstinline*addl $4, %ecx* (in this example the stack offset is 4)
+      		  \item \lstinline*movl (%ecx), %eax*
+        \end{enumerate}
+    \end{ctasm}
+    
+    \begin{ctdesc}
+        This template describes the use of a variable.  When a global variable is used
+        it is easy to generate the assembly because we can just use the name of the
+        identifier.  For locals its position on the stack has to be determined.
+    \end{ctdesc}
+\end{codetemplate}
+
+
+
+\begin{codetemplate}{Assignment}
+    \begin{ctinger}
+        \begin{lstlisting}
+identifier = expr;
+        \end{lstlisting}
+    \end{ctinger}
+
+    \begin{ctexample}
+        \begin{lstlisting}
+i = 12;
+        \end{lstlisting}
+    \end{ctexample}
+    
+    \begin{ctasm}
+        For a global variable:
+      	\begin{enumerate}
+      	    \item The expression is evaluated and stored in \code{eax}.
+    		    \item \lstinline*movl %eax, i* (in this example the name of the identifier is i)
+        \end{enumerate}
+        For a local variable:
+      	\begin{enumerate}
+      	    \item The expression is evaluated and stored in \code{eax}.
+      		  \item The location on the stack is determined
+      		  \item \lstinline*movl %eax, 4(%ebp)* (in this example the offset on the stack is 4)
+        \end{enumerate}
+    \end{ctasm}
+    
+    \begin{ctdesc}
+        This template describes an assignment of a variable.  Global and local
+        variables must be handled differently.
+    \end{ctdesc}
+\end{codetemplate}
+
+
+
+\begin{codetemplate}{Global Variable Declaration}
+    \begin{ctinger}
+        \begin{lstlisting}
+type identifier = initializer;
+        \end{lstlisting}
+    \end{ctinger}
+
+    \begin{ctexample}
+        \begin{lstlisting}
+int i = 5;
+        \end{lstlisting}
+    \end{ctexample}
+    
+    \begin{ctasm}
+        For a global variable:
+    		\begin{enumerate}
+    		    \item \lstinline*.data*
+    		    \item \lstinline*    .globl i* (in this example the name of the identifier is i)
+    		    \item \lstinline*    .type   i,@object)*
+    		    \item \lstinline*    .size   i,4* (in this example the type is 4 bytes in size)
+    		    \item \lstinline*a:*
+    		    \item \lstinline*    .long   5* (in this example the initializer is 5)
+    		\end{enumerate}
+    		
+    \end{ctasm}
+    
+    \begin{ctdesc}
+        This template describes the declaration of a global variable.  When no initializer 
+        is specified, the variable is initialized to zero.
+    \end{ctdesc}
+\end{codetemplate}
+
+
+
+\begin{codetemplate}{Equal}
+    \begin{ctinger}
+        \begin{lstlisting}
+expr == expr
+        \end{lstlisting}
+    \end{ctinger}
+
+    \begin{ctexample}
+        \begin{lstlisting}
+i == 3
+        \end{lstlisting}
+    \end{ctexample}
+    
+    \begin{ctasm}
+    		\begin{enumerate}
+    		    \item The left expression is evaluated and stored in \code{eax}.
+    		    \item \lstinline*movl %eax, %ebx*
+    		    \item The right expression is evaluated and stored in \code{eax}.
+    		    \item \lstinline*cmpl %eax, %ebx*
+    		    \item \lstinline*movl $0, %ebx*
+    		    \item \lstinline*movl $1, %ecx*
+    		    \item \lstinline*cmovne %ebx, %eax*
+    		    \item \lstinline*cmove %ecx, %eax*
+    		\end{enumerate}
+    		
+    \end{ctasm}
+    
+    \begin{ctdesc}
+        This template describes the == operator.  The two expressions are evaluated and the 
+        results are compared.  When the results are the same, 1 is loaded in \code{eax}.  When the results
+        are not the same, 0 is loaded in \code{eax}.
+    \end{ctdesc}
+\end{codetemplate}
+
+
+
+\begin{codetemplate}{Not Equal}
+    \begin{ctinger}
+        \begin{lstlisting}
+expr != expr
+        \end{lstlisting}
+    \end{ctinger}
+
+    \begin{ctexample}
+        \begin{lstlisting}
+i != 5
+        \end{lstlisting}
+    \end{ctexample}
+    
+    \begin{ctasm}
+    		\begin{enumerate}
+    		    \item The left expression is evaluated and stored in \code{eax}.
+    		    \item \lstinline*movl %eax, %ebx*
+    		    \item The right expression is evaluated and stored in \code{eax}.
+    		    \item \lstinline*cmpl %eax, %ebx*
+    		    \item \lstinline*movl $0, %ebx*
+    		    \item \lstinline*movl $1, %ecx*
+    		    \item \lstinline*cmove %ebx, %eax*
+    		    \item \lstinline*cmovne %ecx, %eax*
+    		\end{enumerate}
+    		
+    \end{ctasm}
+    
+    \begin{ctdesc}
+        This template describes the $\neq{}$ operator.  The two expressions are evaluated and the 
+        results are compared.  When the results are not the same, 1 is loaded in \code{eax}.  
+        When the results are the same, 0 is loaded in \code{eax}.
+    \end{ctdesc}
+\end{codetemplate}
+
+
+\begin{codetemplate}{Less}
+    \begin{ctinger}
+        \begin{lstlisting}
+expr < expr
+        \end{lstlisting}
+    \end{ctinger}
+
+    \begin{ctexample}
+        \begin{lstlisting}
+i < 18
+        \end{lstlisting}
+    \end{ctexample}
+    
+    \begin{ctasm}
+    		\begin{enumerate}
+    		    \item The left expression is evaluated and stored in \code{eax}.
+    		    \item \lstinline*movl %eax, %ebx*
+    		    \item The right expression is evaluated and stored in \code{eax}.
+    		    \item \lstinline*cmpl %eax, %ebx*
+    		    \item \lstinline*movl $0, %ebx*
+    		    \item \lstinline*movl $1, %ecx*
+    		    \item \lstinline*cmovnl %ebx, %eax*
+    		    \item \lstinline*cmovl %ecx, %eax*
+    		\end{enumerate}
+    		
+    \end{ctasm}
+    
+    \begin{ctdesc}
+        This template describes the $<$ operator.  The two expressions are evaluated and the 
+        results are compared.  When the left result is less than the right result, 1 is loaded in \code{eax}.  
+        When the left result is not smaller than the right result, 0 is loaded in \code{eax}.
+        
+    \end{ctdesc}
+\end{codetemplate}
+
+
+\begin{codetemplate}{Less Or Equal}
+    \begin{ctinger}
+        \begin{lstlisting}
+expr <= expr
+        \end{lstlisting}
+    \end{ctinger}
+
+    \begin{ctexample}
+        \begin{lstlisting}
+i <= 44
+        \end{lstlisting}
+    \end{ctexample}
+    
+    \begin{ctasm}
+    		\begin{enumerate}
+    		    \item The left expression is evaluated and stored in \code{eax}.
+    		    \item \lstinline*movl %eax, %ebx*
+    		    \item The right expression is evaluated and stored in \code{eax}.
+    		    \item \lstinline*cmpl %eax, %ebx*
+    		    \item \lstinline*movl $0, %ebx*
+    		    \item \lstinline*movl $1, %ecx*
+    		    \item \lstinline*cmovnle %ebx, %eax*
+    		    \item \lstinline*cmovle %ecx, %eax*
+    		\end{enumerate}
+    		
+    \end{ctasm}
+    
+    \begin{ctdesc}
+        This template describes the $\leq{}$ operator.  The two expressions are evaluated and the 
+        results are compared.  When the left result is less than or equals the right result, 
+        1 is loaded in \code{eax}.  When the left result is not smaller than and does not equal the 
+        right result, 0 is loaded in \code{eax}.        
+    \end{ctdesc}
+\end{codetemplate}
+
+
+
+\begin{codetemplate}{Greater}
+    \begin{ctinger}
+        \begin{lstlisting}
+expr > expr
+        \end{lstlisting}
+    \end{ctinger}                                                                                                                                                                                                                                                                                                      
+
+    \begin{ctexample}
+        \begin{lstlisting}
+i > 57
+        \end{lstlisting}
+    \end{ctexample}
+    
+    \begin{ctasm}
+    		\begin{enumerate}
+    		    \item The left expression is evaluated and stored in \code{eax}.
+    		    \item \lstinline*movl %eax, %ebx*
+    		    \item The right expression is evaluated and stored in \code{eax}.
+    		    \item \lstinline*cmpl %eax, %ebx*
+    		    \item \lstinline*movl $0, %ebx*
+    		    \item \lstinline*movl $1, %ecx*
+    		    \item \lstinline*cmovng %ebx, %eax*
+    		    \item \lstinline*cmovg %ecx, %eax*
+    		\end{enumerate}
+    		
+    \end{ctasm}
+    
+    \begin{ctdesc}
+        This template describes the $>$ operator.  The two expressions are evaluated and the 
+        results are compared.  When the left result is greater than the right result, 
+        1 is loaded in \code{eax}.  When the left result is not greater than the right result, 
+        0 is loaded in \code{eax}.
+    \end{ctdesc}
+\end{codetemplate}
+
+
+\begin{codetemplate}{Greater Or Equal}
+    \begin{ctinger}
+        \begin{lstlisting}
+expr >= expr
+        \end{lstlisting}
+    \end{ctinger}
+
+    \begin{ctexample}
+        \begin{lstlisting}
+i >= 26
+        \end{lstlisting}
+    \end{ctexample}
+    
+    \begin{ctasm}
+    		\begin{enumerate}
+    		    \item The left expression is evaluated and stored in \code{eax}.
+    		    \item \lstinline*movl %eax, %ebx*
+    		    \item The right expression is evaluated and stored in \code{eax}.
+    		    \item \lstinline*cmpl %eax, %ebx*
+    		    \item \lstinline*movl $0, %ebx*
+    		    \item \lstinline*movl $1, %ecx*
+    		    \item \lstinline*cmovnge %ebx, %eax*
+    		    \item \lstinline*cmovge %ecx, %eax*
+    		\end{enumerate}
+    		
+    \end{ctasm}
+    
+    \begin{ctdesc}
+        This template describes the $\geq{}$ operator.  The two expressions are evaluated and the 
+        results are compared.  When the left result is greater than or equals the right result, 
+        1 is loaded in \code{eax}.  When the left result is not greater than and does not equal 
+        the right result, 0 is loaded in \code{eax}.
+    \end{ctdesc}
+\end{codetemplate}

@@ -1,0 +1,199 @@
+\chapter{Backus-Naur Form} \label{appendix:bnf}
+
+\lstset{language=BNF}
+\lstset{style=BNF}
+\begin{lstlisting}
+module:               "module" <identifier> ";" globals.
+
+globals:              [e].
+globals:              global globals.
+globals:              "extern" global globals.
+
+global:               function.
+global:               declaration.
+
+function:             functionheader functionrest.
+
+functionheader:       modifiers <identifier> ":" paramlist 
+                      "->" returntype.
+
+functionrest:         ";".
+functionrest:         block.
+
+modifiers:            [e].
+modifiers:            "start".
+
+paramlist:            "void".
+paramlist:            paramblock moreparamblocks.
+
+moreparamblocks:      [e].
+moreparamblocks:      ";" paramblock moreparamblocks.
+
+paramblock:           type param moreparams.
+
+moreparams:           [e].
+moreparams:           "," param moreparams.
+
+param:                reference <identifier> dimensionblock.
+
+returntype:           type reference dimensionblock.
+
+reference:            [e].
+reference:            "*" reference.
+
+dimensionblock:       [e].
+dimensionblock:       "[" "]" dimensionblock.
+
+block:                "{" code "}".
+
+code:                 [e].
+code:                 block code
+code:                 statement cod[e].
+
+statement:            "label" <identifier> ";"
+statement:            ";"
+statement:            "break" ";"
+statement:            "continue" ";"
+statement:            expression ";"
+statement:            declarationblock ";"
+statement:            "if" "(" expression ")" block elseblock
+statement:            "goto" <identifier> ";"
+statement:            "while" "(" expression ")" "do" block
+statement:            "do" block "while" "(" expression ")" ";"
+statement:            "switch" "(" expression ")" "{" 
+                      switchcases "default" block "}"
+statement:            "return" "(" expression ")" ";".
+
+elseblock:            [e].
+elseblock:            "else" block.
+
+switchcases:          [e].
+switchcases:          "case" <intliteral> block swithcases.
+
+declarationblock:     type declaration restdeclarations.
+
+restlocals:           [e].
+restlocals:           "," declaration restdeclarations.
+
+local:                reference <identifier> indexblock 
+                      initializer.
+
+indexblock:           [e].
+indexblock:           "[" <intliteral> "]" indexblock.
+
+initializer:          [e].
+initializer:          "=" expression.
+
+expression:           logicalor restexpression.
+
+restexpression:       [e].
+restexpression:       "=" logicalor restexpression.
+
+logicalor:            logicaland restlogicalor.
+
+restlogicalor:        [e].
+restlogicalor:        "||" logicaland restlogicalor.
+
+logicaland:           bitwiseor restlogicaland.
+
+restlogicaland:       [e].
+restlogicaland:       "&&" bitwiseor restlogicaland.
+
+bitwiseor:            bitwisexor restbitwiseor.
+
+restbitwiseor:        [e].
+restbitwiseor:        "|" bitwisexor restbitwiseor.
+
+bitwisexor:           bitwiseand restbitwisexor.
+
+restbitwisexor:       [e].
+restbitwisexor:       "^" bitwiseand restbitwisexor.
+
+bitwiseand:           equality restbitwiseand.
+
+restbitwiseand:       [e].
+restbitwiseand:       "&" equality restbitwiseand.
+
+equality:             relation restequality.
+
+restequality:         [e].
+restequality:         equalityoperator relation 
+                      restequality.
+
+equalityoperator:     "==".
+equalityoperator:     "!=".
+
+relation:             shift restrelation.
+
+restrelation:         [e].
+restrelation:         relationoperator shift restrelation.
+
+relationoperator:     "<".
+relationoperator:     "<=".
+relationoperator:     ">".
+relationoperator:     ">=".
+
+shift:                addition restshift.
+
+restshift:            [e].
+restshift:            shiftoperator addition restshift.
+
+shiftoperator:        "<<".
+shiftoperator:        ">>".
+
+addition:             multiplication restaddition.
+
+restaddition:         [e].
+restaddition:         additionoperator multiplication 
+                      restaddition.
+
+additionoperator:     "+".
+additionoperator:     "-".
+
+multiplication:       unary3 restmultiplication.
+
+restmultiplication:   [e].
+restmultiplication:   multiplicationoperator unary3 
+                      restmultiplication.
+
+multiplicationoperator: "*".
+multiplicationoperator: "/".
+multiplicationoperator: "%".
+
+unary3:               unary2
+unary3:               unary3operator unary3.
+
+unary3operator:       "&".
+unary3operator:       "*".
+unary3operator:       "~".
+
+unary2:               factor.
+unary2:               unary2operator unary2.
+
+unary2operator:       "+".
+unary2operator:       "-".
+unary2operator:       "!".
+
+factor:               <identifier> application.
+factor:               immediat[e].
+factor:               "(" expression ")".
+
+application:          [e].
+application:          "[" expression "]" application.
+application:          "(" expression moreexpressions ")".
+
+moreexpressions:      [e].
+moreexpressions:      "," expression morexpressions.
+
+type:                 "bool".
+type:                 "char".
+type:                 "float".
+type:                 "int".
+type:                 "untyped".
+
+immediate:            <booleanliteral>.
+immediate:            <charliteral>.
+immediate:            <floatliteral>.
+immediate:            <intliteral>.
+immediate:            <stringliteral>.
+\end{lstlisting}

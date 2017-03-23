@@ -1,0 +1,41 @@
+% software.tex
+% Practical Compiler Construction
+% Chapter: Software
+% This chapter lists the required software packages.
+% inger.
+
+\chapter{Software Packages}
+
+	This appendix lists the locations software packages that are required or
+	recommended in order to use \langname{} or do development work for \langname{}.
+	Note that the locations (URLs) of these packages are subject to change and
+	may not be correct.
+
+	\begin{tabular}{ll}
+		\tableheader{Package}		& \tableheader{Description and location}  \\
+		\hline	
+		RedHat Linux 7.2			& Operating system			\\ &  \code{http://www.redhat.com}			\\
+		SuSE Linux 8.0				& Operating system			\\ &  \code{http://www.suse.com}				\\
+		Mandrake 8.0				& Operating system			\\ &  \code{http://www.mandrake.com}			\\
+		GNU Assembler 2.11.90.0.8	& AT\&T syntax assembler 	\\ &  \code{http://www.gnu.org/directory/GNU/binutils.html} \\
+		GNU Linker 2.11.90.0.8		& COFF file linker			\\ &  \code{http://www.gnu.org/directory/GNU/binutils.html} \\
+		DJGPP 2.03					& GNU tools port			\\ &  \code{http://www.delorie.com}			\\
+		Cygwin 1.2					& GNU Linux emulator for Windows \\ & \code{http://www.cygwin.com}    \\
+	\end{tabular}
+
+	\begin{tabular}{ll}
+		\tableheader{Package}		& \tableheader{Description and location}  \\
+		\hline
+		CVS	1.11.1p1				& Concurrent Versioning System	\\ & \code{http://www.cvshome.org}    \\
+		Automake 1.4-p5				& Makefile generator		\\ & \code{http://www.gnu.org/software/automake} \\
+		Autoconf 2.13				& Makefile generator support\\ & \code{http://www.gnu.org/software/autoconf/autoconf.html} \\
+		Make 2.11.90.0.8			& Makefile processor		\\ & \code{http://www.gnu.org/software/make/make.html} \\
+		Flex 2.5.4					& Lexical analyzer generator\\ & \code{http://www.gnu.org/software/flex} \\
+		\LaTeXe{} 					& Typesetting system		\\ & \code{http://www.latex-project.org}		\\
+		Mik\TeX{} 2.2				& Typesetting system		\\ & \code{http://www.miktex.org}				\\
+		TexnicCenter				& \TeX{} editor				\\ & \code{http://www.toolscenter.org/products/texniccenter} \\
+		Ultra Edit 9.20				& \TeX{} editor				\\ & \code{http://www.ultraedit.com}			\\
+		Perl 6						& Scripting language		\\ & \code{http://www.perl.com}				\\
+	\end{tabular}
+	
+	

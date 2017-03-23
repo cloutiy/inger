@@ -1,0 +1,31 @@
+% abstract.otx
+
+\cleardoublepage
+
+\begin{center}
+\textbf{Abstract}
+\end{center}
+
+\begin{quote}
+Plenty of literature is available to learn about compiler construction, but most of it
+is either too easy, covering only the very basics, or too difficult and accessible
+only to academics. We find that, most notably, literature about code generation is
+lacking and it is in this area that this book attempts to fill in the gaps.
+
+In this book, we design a new language (\langname{}), and explain how to write a
+compiler for it that compiles to Intel assembly language. We discuss
+lexical analysis (scanning), LL(1) grammars, recursive descent parsing, syntax
+error recovery, identification, type checking and code generation using templates
+and give practical advice on tackling each part of the compiler.
+
+\end{quote}
+
+
+
+
+        
+        
+        
+ 
+	    
+               

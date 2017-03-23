@@ -1,0 +1,31 @@
+\chapter{Logic Language Parser Source} \label{appendix:logicparser}
+
+	\section{Lexical Analyzer}
+	
+	\scriptsize
+	\lstset{language=Clang}
+	\lstset{style=Source}
+	\begin{lstlisting}
+	%!LOGICLEXER
+	\end{lstlisting}
+	\normalsize
+	
+	\section{Parser Header}
+
+	\scriptsize
+	\lstset{language=Clang}
+	\lstset{style=Source}
+	\begin{lstlisting}
+	%!LOGICPARSER_HEADER
+	\end{lstlisting}
+	\normalsize
+
+	\section{Parser Source}
+
+	\scriptsize
+	\lstset{language=Clang}
+	\lstset{style=Source}
+	\begin{lstlisting}
+	%!LOGICPARSER_SOURCE
+	\end{lstlisting}
+	\normalsize

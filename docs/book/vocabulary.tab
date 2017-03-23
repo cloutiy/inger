@@ -1,0 +1,64 @@
+\begin{table}
+	\label{table_vocabulary}
+	\begin{tabular}{llll}
+		\verb|(| &
+		\verb|)| &
+		\verb|[| &
+		\verb|]| \\
+		\verb|!| &
+		\verb|-| &
+		\verb|+| &
+		\verb|~| \\
+		\verb|*| &
+		\verb|&| &
+		\verb|*| &
+		\verb|/| \\
+		\verb|%| &
+		\verb|+| &
+		\verb|-| &
+		\verb|>>| \\
+		\verb|<<| &
+		\verb|<| &
+		\verb|<=| &
+		\verb|>| \\
+		\verb|>=| &
+		\verb|==| &
+		\verb|!=| &
+		\verb|&| \\
+		\verb|^| &
+		\verb+|+ &
+		\verb|&&| &
+		\verb+||+ \\
+		\verb|?| &
+		\verb|:| &
+		\verb|=| & 
+		\verb|,| \\
+		\verb|;| &
+		\verb|->| &
+		\verb|{| &
+		\verb|}| \\
+		\code{bool} 	&
+		\code{break}	&
+		\code{case} 	&
+		\code{char}		\\
+		\code{continue}	&
+		\code{default}	&
+		\code{do}		&
+		\code{else}		\\
+		\code{extern}	& 
+		\code{false}	&
+		\code{float}	&
+		\code{goto\_considered\_harmful}	\\
+		\code{if}		& 
+		\code{int}		&
+		\code{label}	&
+		\code{module}	\\
+		\code{return}	& 
+		\code{start}	&
+		\code{switch}	&
+		\code{true}		\\
+		\code{untyped}	& 
+		\code{while}	& \\
+	\end{tabular}
+	\caption{\langname{} vocabulary}
+\end{table}

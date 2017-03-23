@@ -1,0 +1,26 @@
+\chapter{Syntax Diagrams} \label{appendix:syntaxdiagrams}
+
+\diagram{syntax_module.png}{Module}{diag_module}
+\diagram{syntax_function.png}{Function}{diag_function}
+\diagram{syntax_formalparameters.png}{Formal function parameters}{diag_formalparameters}
+\diagram{syntax_declaration.png}{Data declaration}{diag_declaration}
+\diagram{syntax_block.png}{Code block}{diag_block}
+\diagram{syntax_statement.png}{Statement}{diag_statement}
+\diagram{syntax_switchcases.png}{Switch cases}{diag_switchcases}
+\clearpage
+\diagram{syntax_ops_15_13.png}{Assignment, Logical OR Operators}{diag_ops_15_13}
+\diagram{syntax_ternaryif.png}{Ternary IF}{diag_ternaryif}
+\diagram{syntax_ops_12_11.png}{Logical AND and Bitwise OR Operators}{diag_ops_12_11}
+\diagram{syntax_ops_10_9.png}{Bitwise XOR and Bitwise AND Operators}{diag_ops_10_9}
+\diagram{syntax_ops_8.png}{Equality Operators}{diag_ops_8}
+\diagram{syntax_ops_7.png}{Relational Operators}{diag_ops_7}
+\diagram{syntax_ops_6_5.png}{Bitwise Shift, Addition and Subtraction Operators}{diag_ops_6_5}
+\diagram{syntax_ops_4.png}{Multiplication and Division Operators}{diag_ops_4}
+\diagram{syntax_ops_unaries.png}{Unary Operators}{diag_ops_unaries}
+\diagram{syntax_factor.png}{Factor (Variable, Immediate or Expression)}{diag_factor}
+\diagram{syntax_immediate.png}{Immediate (Literal) Value}{diag_immediate}
+\diagram{syntax_identifier.png}{Literal identifier}{diag_literal_identifier}
+\diagram{syntax_integer.png}{Literal integer number}{diag_literal_integer}
+\diagram{syntax_float.png}{Literal float number}{diag_float_integer}
+
+

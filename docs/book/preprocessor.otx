@@ -1,0 +1,103 @@
+% preprocessor.otx
+% Practical Compiler Construction
+% Chapter: Preprocessor
+
+
+\chapter{Preprocessor}
+    
+    \section{What is a preprocessor?}
+        
+        % Describe a preprocessor.
+        A preprocessor is a tool used by a compiler to transform a program before
+        actual compilation.  The facilities a preprocessor provides may vary, but the
+        four most common functions a preprocessor could provide are:
+
+        \begin{itemize}
+            \item header file inclusion
+            \item conditional compilation
+            \item macro expansion
+            \item line control
+        \end{itemize}
+
+        \emph{Header file inclusion} is the substitution of files for include declarations 
+        (in the C preprocessor this is the \verb|#include| directive). \emph{Conditional 
+        compilation} provides a mechanism to include and exclude parts of  a program 
+        based on various conditions (in the C preprocessor this can be done with 
+        \verb|#define| directives).  \emph{Macro expansion} is probably the most powerful 
+        feature of a preprocessor.  Macros are short abbreviations of longer program 
+        constructions.  The  preprocessor replaces these macros with their definition 
+        throughout the program  (in the C preprocessor a macro is specified with 
+        \verb|#define|).  \emph{Line control} is used to inform the compiler where a source 
+        line originally came from when different source files are combined into an 
+        intermediate file.  Some preprocessors also remove comments from the source file, 
+        though it is  also perfectly acceptable to do this in the lexical analyzer.
+
+    \section{Features of the Inger preprocessor}
+    
+        % List the features of Inger's preprocessor.
+        The preprocessor in \langname{} only supports header file inclusion for now.  
+        In the near future other preprocessor facilities may be added, but due to time 
+        constraints header file inclusion is the only feature.  The preprocessor 
+        directives in Inger always start at the beginning of a line with a \verb|#|, 
+        just like the C preprocessor.  The directive for header inclusion is 
+        \verb|#import| followed  by the name of the file to include between quotes.
+
+        \subsection{Multiple file inclusion}
+
+            Multiple inclusion of the same header might give some problems.  In C we 
+            prevent this through conditional compiling with a \verb|#define| or with a 
+            \verb|#pragma| once directive.  The Inger preprocessor automatically prevents 
+            multiple inclusion by keeping a list of files that are already included for 
+            this source file.
+            
+            \begin{example}{Multiple inclusion}{example:multipleinclusion}
+				\begin{center}
+	                \includegraphics[scale=0.18]{preprocessor1.png}
+				\end{center}
+
+                \jargon{Multiple inclusion} -- this should be perfectly acceptable for a programmer
+                so no warning is shown, though \code{hdrfile3} is included only once.
+            \end{example}
+ 
+            Forcing the user not to include files more than once is not an option since         
+            sometimes multiple header files just need the same other header file.  This         
+            could be solved by introducing conditional compiling into the preprocessor 
+            and have the programmers solve it themselves, but it would be nice if it        
+            happened automatically so the \langname{} preprocessor keeps track of included        
+            files to prevent it.
+
+        \subsection{Circular References}
+
+            Another problem that arises from header files including other header files is       
+            the problem of circular references.  Again unlike the C preprocessor, the 
+            \langname{} preprocessor detects circular references and shows a warning while        
+            ignoring the circular include.
+
+            \begin{example}{Circular References}{example:circularrefereces}
+				\begin{center}
+	                \includegraphics[scale=0.18]{preprocessor2.png}
+				\end{center}
+
+                \jargon{Circular inclusion} -- this always means that there is an error in the source
+                so the preprocessor gives a warning and the second inclusion of
+                \code{hdrfile2} is ignored.
+            \end{example}
+
+            This is realized by building a tree structure of includes.  Everytime a new
+            file is to be included, the tree is checked upwards to the root node, to see 
+            if this file has already been included.  When a file already has been           
+            included the preprocessor shows a warning and the import directive is 
+            ignored.  Because every include creates a new child node in the tree, 
+            the preprocessor is able to distinct between a multiple inclusion and a 
+            circular inclusion by only going up in the tree.
+
+            \begin{example}{Include tree}{example:includetree}
+				\begin{center}
+	                \includegraphics[scale=0.18]{preprocessor3.png}
+				\end{center}
+                \jargon{Include tree structure} -- for every inclusion, a new child node is added.
+                This example shows how the circular inclusion for header 2 is
+                detected by going upwards in the tree, while the multiple inclusion
+                of header 3 is not seen as a circular inclusion because it is
+                in a different branch.
+            \end{example}

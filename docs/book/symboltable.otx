@@ -1,0 +1,383 @@
+% symboltable.otx
+% Practical Compiler Construction
+% Chapter: Symbol table
+
+\chapter{Symbol table}
+
+	\map{map3symtab.png}
+    
+	\section{Introduction to symbol identification}
+
+	At compile time we need to keep track of the different symbols 
+	(functions and variables) declared in the program source code. 
+	This is a requirement because every \ijargon{symbol}
+	must be identifiable with a unique name so we can find the 
+	symbols back later.
+	
+	%[float,caption={dfgdfgf},label=listing_blah]
+	
+	\begin{example}{An Incorrect Program}{ex_program_with_incorrect_assignment}
+			\lstset{language=Inger}
+			\lstset{style=Source}
+			\begin{lstlisting}
+module flawed;
+start main: void -> void
+{
+ 	2 * 4;           // result is lost
+	myfunction( 3 ); // function does not exist
+}
+			\end{lstlisting}
+	\end{example}
+	
+	Without \ijargon{symbol identification} it is impossible to make
+	assignments, or define functions. After all, \emph{where} do we assign
+	the value to? And how can we call a function if it has no name? We do
+	not think we would make many programmers happy if they could only 
+	reference values and functions through  memory addresses. In the example 
+	the mathematical production yields \lstinline$8$, but the result 
+	is not assigned to a uniquely identified \ijargon{symbol}.
+	The call to \code{myfunction} yields a compiler error as \code{myfunction}
+	is not \emph{declared} anywhere in the program source so there is no way
+	for the compiler to know what code the programmer actually wishes 
+	to call. This explains only \emph{why} we need \ijargon{symbol 
+	identification} but does not yet tell anything practical about the 
+	subject.\\
+	
+	
+	\section{Scoping}
+	We would first like to introduce \jargon{scoping}. What actually is 
+	\ijargon{scoping}? In Webster's Revised Unabridged Dictionary (1913) 
+	a scope is defined as:
+	\begin{quote}
+		\emph{Room or opportunity for free outlook or aim; space for action; 
+		amplitude of opportunity; free course or vent; liberty; range of view, 
+		intent, or action.}
+	\end{quote}
+
+  When discussing scoping in the context of a programming language
+  the description comes closest to Webster's \jargon{range of view}. A scope 
+  limits the \jargon{view} a statement or expression has when it comes 
+  to other symbols. Let us illustrate this with an example in which 
+  every block, delimited by \{ and \}, results in a new scope.
+
+	\begin{example}{A simple scope example}{ex_simple_scope_program}
+			\lstset{language=Inger}
+			\lstset{style=Source}
+			\begin{lstlisting}
+
+module example; // begin scope (global)
+
+int a = 4;
+int b = 3;
+		
+start main: void -> void
+{ // begin scope (main)
+  float a = 0;
+
+  { // begin scope (free block}
+    char a = 'a';
+    int x;
+    print( a );
+  } // end of scope {free block}
+  x = 1; // x is not in range of view!
+  print( b );
+} // end of scope (main)
+
+// end of scope 0 (global)
+
+			\end{lstlisting}	    
+	\end{example}
+	
+	Example \ref{ex_simple_scope_program} contains an \langname{}
+        program with $3$ nested scopes containing variable declarations.
+	Note that there are $3$ declarations for variables named \lstinline{a},
+	which is perfectly legal as each declaration is made in a scope that
+	did not yet contain a symbol called `\lstinline{a}' of its own.
+	\langname{} only allows referencing of symbols in the local scope and
+	(grand)parent scopes. The expression \lstinline{x = 1;} is 
+	illegal since x was declared in a scope that could be best described
+	as a \jargon{nephew} scope.\\
+	
+	Using identification in scopes enables us to declare a symbol name
+	multiple times in the same program but in different scopes, this 
+	implicates that a \ijargon{symbol} is \ijargon{unique} in its 
+	own \ijargon{scope} and not necessarily in the program, this 
+	way we do not run out of useful variable names within a program.\\
+	
+	Now that we know what scoping is, it is probably best to continue with
+	some theory on how to store information about these scopes and their
+	symbols during compile time.\\
+	
+	%*********************************************************************%
+	%Whenever a \ijargon{global} or \ijargon{local} symbol is 
+	%encountered it should be stored into a symbol table for
+	%later reference.\\
+	%*********************************************************************%
+		
+	\section{The Symbol Table}
+	
+	Symbols collected during parsing must be stored for later 
+	reference during \ijargon{semantic analysis}. In order to have 
+	access to the symbols during in a later stage it is important 
+	to define a clear data structure in which we store the necessary 
+	information about the symbols and the scopes they are in. This 
+	data structure is called a \ijargon{Symbol Table} and can be 
+	implemented in a variety of ways (e.g. \ijargon{arrays}, 
+	\ijargonex{linked lists}{linked list}, \ijargon{hash tables}, 
+	\ijargon{binary search trees} \& \ijargon{n-ary search trees}). 
+	Later on in this chapter we will discuss what data structure we 
+	considered best for our symbol table implementation.\\
+
+	\subsection{Dynamic vs. Static}
+	
+	There are two possible types of symbol tables, dynamic or static symbol 
+	tables. What exactly are the differences between the two types, and why 
+	is one better than the other? A dynamic symbol table can only be used when
+	both the gathering of symbol information and usage of this information 
+	happen in one pass. It works in a stack like manner: a symbol is pushed on
+	the stack when it is encountered. When a scope is left, we pop all symbols
+	which belong to that scope from the stack. A static table is built once
+	and can be walked as many times as required. It is only deconstructed 
+	when the compiler is finished.\\
+
+	\begin{example}{Example of a dynamic vs. static symbol table}{ex_code_snippet_symboltable_build}
+    	\lstset{language=Inger}
+	\lstset{style=Source}
+	\begin{lstlisting}
+module example;
+		 
+int v1, v2;
+		 
+f: int v1, v2 -> int
+{
+	return (v1 + v2);
+}
+
+start g: int v3 -> int
+{
+	return  (v1 + v3);
+}
+	\end{lstlisting}
+	\textbf{The following example illustrates now a dynamic table grows and shrinks over time.}\\
+	After line $3$ the symbol table is a set of symbols
+	\begin{quote}
+		$T = \{ v1, v2 \}$
+	\end{quote}
+	After line $5$ the symbol table also contains the function \lstinline$f$ and 
+	the local variables \lstinline$v1$ and \lstinline$v2$
+	\begin{quote}
+		$T = \{ v1, v2, f, v1, v2 \}$
+	\end{quote}
+	At line 9 the symbol table is back to its global form
+	\begin{quote}
+		$T = \{ v1, v2 \}$
+	\end{quote}
+	After line $10$ the symbol table is expanded with the function \lstinline$g$ 
+	and the local variable \lstinline$v3$
+	\begin{quote}
+		$T = \{ v1, v2, g, v3 \}$
+	\end{quote}
+	\textbf{Next we illustrate now a static table's set of symbols only grows.}\\
+	After line $3$ the symbol table is a set of symbols
+	\begin{quote}
+		$T = \{ v1, v2 \}$
+	\end{quote}
+	After line $5$ the symbol table also contains the function \lstinline$f$ and 
+	the local variables \lstinline$v1$ and \lstinline$v2$
+	\begin{quote}
+		$T = \{ v1, v2, f, v1, v2 \}$
+	\end{quote}
+	After line $10$ the symbol table is expanded with the function \lstinline$g$ 
+	and the local variable \lstinline$v3$
+	\begin{quote}
+		$T = \{ v1, v2, f, v1, v2, g, v3 \}$
+	\end{quote}
+	\end{example}
+
+	In earlier stages of our research we assumed local symbols 
+	should only be present in the symbol table when the scope 
+	it is declared in is being processed (this includes, off course,
+	children of that scope). After all, storing a symbol that is no 
+	longer accessable seems pointless. This 
+	assumption originated when we were working on the idea of a 
+	single-pass compiler (tokenizing, parsing, semantics and code 
+	generation all in one single run) so for a while we headed in 
+	the direction of a dynamic symbol table. Later on we decided to make 
+	the compiler multi-pass which resulted in the need to store symbols 
+	over a longer timespan. Using multiple passes, the local symbols 
+	should remain available for as long as the compiler lives as they 
+ 	might be needed every pass around, thus we decided to switch to 
+ 	a static symbol table.\\
+
+	When using a static symbol table, the table will not shrink but only grow. Instead 
+	of building the symbol table during pass 1 which happens when using a dynamic table, 
+	we will construct the symbol table from the AST. The AST will be available after 
+	parsing the source code.
+
+	\section{Data structure selection}
+	% Several aspects on the selection of a suitable data structure for the symbol table.
+
+	\subsection{Criteria}
+	In order to choose the right data structure for implementing the symbol table we 
+	look at its primary goal and what the criteria are. Its primary goal is storing 
+	symbol information an provide a fast lookup facility, for easy access to all the 
+	stored symbol information.\\
+
+	Since we have only a short period of time to develop our language \langname{}
+	and the  compiler, the only criteria we had in choosing a suitable data 
+	structure was that it was easy to use, and implement.\\
+
+	\subsection{Data structures compared}
+	One of the first possible data structures which comes to mind when thinking of 
+	how to store a list of symbols is perhaps an array. Although an array is very 
+	convenient to store symbols, it has quite a few practical limitations. Arrays are 
+	defined with a static size, so chances are you define a symbol table with array size 
+	256, and end up with 257 symbols causing a buffer overflow (an internal compiler 
+	error). Writing beyond an array limit will produce unpredictable results. Needless 
+	to say, this situation is undesirable. Searching an array is not efficient at all due 
+	to its linear searching algorithm. A binary search algorithm could be applied, but 
+	this would require the array to be sorted at all times. For sorted arrays, searching 
+	is a fairly straightforward operation and easy to implement. It is also notable
+	that an array would probably only be usable when using either a dynamic table or
+	if no scoping would be allowed.\\
+	
+	\diagram{symtab_array.png}{Array}{fig_Array}
+
+	If the table would be implemented as a stack, finding a symbol is a simple matter of 
+	searching for the desired symbol from the top of the stack. The first variable found 
+	is automatically the last variable added and thus the variable in the nearest scope. 
+	This implementation makes it easy to use multi-level scoping, but is a heavy burden 
+	on performance as with every search the stack has to be deconstructed and stored on a 
+	second stack (until the first occurrence is found) and reconstructed, a very expensive 
+	operation. This implementation would probably be the best for a dynamic table if it
+	were not for its expensive search operations.\\
+	
+	\diagram{symtab_stack.png}{Stack}{fig_Stack}
+	 
+	Another dynamic implementation would be a linked list of symbols. If implemented as 
+	an unsorted double linked list it would be possible to use it just like the stack 
+	(append to the back and search from the back) without the disadvantage of a lot of 
+	push and pop operations. A search still takes place in a linear time frame but the 
+	operations themselves are much cheaper than the stack implementation.\\
+	
+	\diagram{symtab_list.png}{Linked List}{fig_List}
+	
+	Binary search trees improve search time massively, but only in sorted form (an unsorted 
+	tree after all, is not a tree at all). This results in the loss of an advantage the 
+	stack and double linked list offered: easy scoping. Now the first symbol found is not 
+	per definition the latest definition of that symbol name. It in fact is probably the 
+	first occurrence. This means that the search is not complete until it is impossible to 
+	find another occurrence. This also means that we have to include some sort of scope 
+	field with every symbol to separate the symbols: (a,1) and (a,2) are symbols of the same 
+	name, but a is in a higher scope and therefore the correct symbol. Another big disadvantage 
+	is that when a function is processed we need to rid the tree of all symbols in that 
+	function's scope. This requires a complete search and rebalancing of the tree. Since the 
+	tree is sorted by string value every operation (insert, search, etc...) is quite expensive. 
+	These operations could be made more time efficient by using an hash algorithm as explained 
+	in the next paragraph.\\
+
+	String comparisons are relatively heavy compared to comparison of simple types such as 
+	integers or bytes so using an hash algorithm to convert symbol names to simple types would 
+	speed all operations on the tree considerably.\\
+	
+	\diagram{symtab_btree.png}{Binary Tree}{fig_BTree}
+
+	The last option we discuss is the n-ary tree. Every node has n children each of which
+	implicate a new scope as a child of its parent scope. Every node is a scope and all symbols
+	in that scope are stored inside that node. When the AST is walked, all the code has to do
+	is make sure that the symbol table walks along. Then when information about a symbol is 
+	requested, we only have to search the current scope and its (grand) parents. This seems in 
+	our opinion to be the only valid static symbol table implementation.
+
+	\diagram{symtab_ntree.png}{N-ary Tree}{fig_NTree}
+
+	\subsection{Data structure selection}
+	We think a combination of an n-ary tree combined with linked lists is a suitable solution 
+	for us. Initially we thought using just one linked list was a good idea. Each list node, representing 
+	a scope, would contain the root node of a binary tree. The major advantage of this approach 
+	is that adding and removing a scope was easy and fast. This advantage was based on the idea 
+	that the symbol table would grow and shrink during the first pass of compilation, which means 
+	that the symbol table is not available anymore after the first pass. This is not what we want 
+	since the symbol table must be available at all times after the first pass and therefore favour 
+	a new data structure that is less efficient in removing scopes ( we do not remove scopes anyway 
+	) but faster in looking up symbols in the symbol table.\\
+
+	\section{Types}
+
+	The symbol table data structure is not enough, it is just a tree and should be decorated 
+	with symbol information like (return) types and modifiers. To store 
+	this information correctly we designed several logical structures for symbols and types.
+	It basicly comes down to a set of functions which wrap a Type structure. These functions 
+	are for example: \lstinline{CreateType()}, \lstinline{AddSimpleType()}, 
+	\lstinline{AddDimension()}, \lstinline{AddModifier()}, etc\ldots{}. There is a similar
+	set of accessor functions. 
+
+	\section{An Example}
+
+	To illustrate how the symbol table is filled from the \ijargon{Abstract 
+	Syntax Tree} we show which steps have to be taken to fill the symbol table.
+	
+  	\begin{enumerate}
+		\item	Start walking at the root node of the AST in a pre-order fashion.
+		\item	For each block we encounter we add a new child to the \jargon{current
+			    scope} and make this child the new \jargon{current scope}
+		\item	For each variable declaration found, we extract:
+		\begin{itemize}
+			\item[-] Variable name
+			\item[-] Variable type\footnote{for every type we also store optional information
+				                              such as modifiers (start, extern, etc\ldots{})
+				                              and dimensions (for pointers and arrays)}
+		\end{itemize}
+		\item	For each function found, we extract:
+		\begin{itemize}
+			\item[-] Function name
+			\item[-] Function types, starting with the return type$^1$
+		\end{itemize}
+		\item 	After the end of a block is encountered we move back to the parent scope.
+	\end{enumerate}
+	
+	To conclude we will show a simple example.
+
+	\begin{example}{Simple program to test expressions}{ex_simple_program_to_test_expressions}
+			
+	\lstset{language=Inger}
+	\lstset{style=Source}
+	\begin{lstlisting}
+module test_module;
+
+int z = 0;
+
+inc: int a -> int
+{
+	return( a + 1 );
+}
+	
+start main: void -> void
+{
+	int i;
+	i = (z * 5) / 10 + 20 - 5 * (132 + inc( 3 ) );
+}
+	\end{lstlisting}
+	\end{example}
+	
+	We can distinguish the following steps in parsing the example source code.\\
+
+	\begin{enumerate}
+		\item found \code{z}, add symbol to current scope (\code{global})
+		\item found \code{inc}, add symbol to current scope (\code{global})
+		\item enter a new scope level as we now parse the function \code{inc}
+		\item found the parameter \code{a}, add this symbol to the current scope (\code{inc})
+		\item as no new symbols are encountered, leave this scope
+		\item found \code{main}, add symbol to current scope (\code{global})
+		\item enter a new scope level as we now parse the function \code{main}
+		\item found \code{i}, add symbol to current scope (\code{main})
+		\item as no new symbols are encountered, leave this scope
+	\end{enumerate}
+
+	After these steps our symbol table will look like this.\\
+
+	\diagram{symtab_conclusion.png}{Conclusion}{fig_Conclusion}
+
+\newpage
+
+
